@@ -55,7 +55,8 @@ type UserModel struct {
 
 func (m *UserModel) Insert(user *User) (int, error) {
 
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(user.Password), 12)
+	// TODO: figure out password stuff
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(*user.Password.plaintext), 12)
 	if err != nil {
 		return 0, err
 	}
@@ -102,4 +103,4 @@ func (m *UserModel) Exists(id int) (bool, error) {
 	return false, nil
 }
 
-func ValidateEmail(v *validator.Validator)
+//func ValidateEmail(v *validator.Validator)

@@ -2,7 +2,7 @@
 
 {{define "main"}}
     <h2><a href="/update/list">Latest Updates</a></h2>
-    <h3><a href="/update/view/{{.LatestUpdate.ID}}">{{.LatestUpdate.Title}}</a></h3>
-        <h4>{{.LatestUpdate.Author}}</h4>
-        <p>{{.LatestUpdate.Body}}</p>
+    <h3><a href="/update/view/{{.Update.ID}}">{{.Update.Title}}</a></h3>
+        <h4>{{.Update.Author}}</h4>
+        <p>{{.Update.Body}}</p>
 {{end}}
