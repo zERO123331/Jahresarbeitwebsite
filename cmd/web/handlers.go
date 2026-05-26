@@ -50,7 +50,7 @@ func (app *application) updates(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) shopPage(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	entries, err := app.shop.GetAll()
+	entries, err := app.models.Shop.GetAll()
 	if err != nil {
 		app.serverError(w, r, err)
 		return
@@ -66,7 +66,7 @@ func (app *application) shopEntry(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, r, fmt.Errorf("invalid shop entry id: %s", r.PathValue("id")))
 		return
 	}
-	entry, err := app.shop.GetByID(id)
+	entry, err := app.models.Shop.GetByID(id)
 	if err != nil {
 		app.serverError(w, r, err)
 		return
@@ -105,7 +105,7 @@ func (app *application) userCreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := app.users.Insert(&models.User{Name: name, Email: email, Password: password})
+	id, err := app.models.User.Insert(&models.User{Name: name, Email: email, Password2: password})
 	if err != nil {
 		app.clientError(w, r, http.StatusBadRequest)
 		return

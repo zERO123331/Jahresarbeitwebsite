@@ -13,10 +13,40 @@ type User struct {
 	CreatedAt    time.Time
 	Name         string
 	Email        string
-	Password     string
+	Password     password
+	Password2    string
 	PasswordHash string
 	Activated    bool
 	Version      int
+}
+
+type password struct {
+	plaintext *string
+	hash      []byte
+}
+
+func (p *password) Set(plaintextPassword string) error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(plaintextPassword), 12)
+	if err != nil {
+		return err
+	}
+	p.hash = hash
+	p.plaintext = &plaintextPassword
+	return nil
+}
+
+func (p *password) Matches(plaintextPassword string) (bool, error) {
+	err := bcrypt.CompareHashAndPassword(p.hash, []byte(plaintextPassword))
+	if err != nil {
+		switch {
+		case err == bcrypt.ErrMismatchedHashAndPassword:
+			return false, nil
+		default:
+			return false, err
+		}
+	}
+
+	return true, nil
 }
 
 type UserModel struct {
@@ -71,3 +101,5 @@ func (m *UserModel) Activate(id int) error {
 func (m *UserModel) Exists(id int) (bool, error) {
 	return false, nil
 }
+
+func ValidateEmail(v *validator.Validator)
