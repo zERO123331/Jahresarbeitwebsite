@@ -58,7 +58,7 @@ type UserModel struct {
 func (m *UserModel) Insert(user *User) (int, error) {
 	stmt := `INSERT INTO users (name, email, password_hash, activated) VALUES ($1, $2, $3, false) RETURNING id, created_at, version`
 
-	args := []any{user.Name, user.Email, user.Password.hash}
+	args := []any{user.Name, user.Email, string(user.Password.hash)}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
@@ -133,7 +133,7 @@ WHERE email = $1`
 
 func (m UserModel) Update(user *User) error {
 	query := `
-UPDATE users
+UPDATE user
 SET name = $1, email = $2, password_hash = $3, activated = $4, version = version + 1
 WHERE id = $5 AND version = $6
 RETURNING version`
@@ -162,7 +162,11 @@ RETURNING version`
 }
 
 func (m *UserModel) Activate(id int) error {
-	return nil
+	stmt := `UPDATE user SET activated = true WHERE id = $1`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	err := m.DB.QueryRowContext(ctx, stmt, id).Scan()
+	return err
 }
 
 func (m *UserModel) Exists(id int) (bool, error) {
