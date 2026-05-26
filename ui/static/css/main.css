@@ -1,0 +1,78 @@
+body {
+    background: #111;
+    color: white;
+}
+
+.navbar {
+    background: #666;
+    color: white;
+    padding: 0;
+    margin: 0;
+    font-size: 1.2em;
+    position: fixed;
+    top: 0;
+    z-index: 100;
+    width: 100%;
+    display: flex;
+    overflow: hidden;
+    justify-content: space-between;
+}
+
+.navbar > * {
+    display: block;
+    padding: 10px;
+}
+
+.navbar > .left {
+    float: left;
+}
+
+.navbar > .right {
+    margin-left: 10px;
+    margin-right: 0;
+    float: right;
+}
+
+.navbar a:link,
+.navbar a:visited {
+    color: white;
+    text-decoration: none;
+}
+
+.navbar * {
+    transition: color 0.2s;
+}
+
+.navbar a:hover {
+    color: #ccc;
+}
+
+main {
+    margin-top: 1%;
+}
+
+.update-list {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    width: 100vw;
+    padding: 20px;
+    font-size: 1.2em;
+    text-align: left;
+    color: white;
+    background: #222;
+    z-index: 1;
+}
+
+.update-list div {
+    margin: 10px;
+    padding: 20px;
+    width: 40%;
+    height: 40%;
+    background: #333;
+    border-radius: 10px;
+    z-index: 2;
+}

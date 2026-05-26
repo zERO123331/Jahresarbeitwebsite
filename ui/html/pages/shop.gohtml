@@ -1,0 +1,8 @@
+{{define "title"}}Shop{{end}}
+{{define "main"}}
+    {{range .ShopEntries}}
+        <div>
+            <h2>{{.Title}}</h2>
+        </div>
+    {{end}}
+{{end}}

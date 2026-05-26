@@ -1,0 +1,13 @@
+{{define "title"}}Updates{{end}}
+
+{{define "main"}}
+    <div class="update-list">
+    {{range .Updates}}
+    <div class="update update-list-element">
+        <h2><a href="/update/view/{{.ID}}">{{.Title}}</a></h2>
+        <h3>{{.Author}}</h3>
+        <p>{{.Body}}</p>
+    </div>
+    {{end}}
+    </div>
+{{end}}
