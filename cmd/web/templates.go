@@ -7,8 +7,8 @@ import (
 )
 
 type templateData struct {
-	Updates     []Update
-	Update      Update
+	Updates     []*models.Update
+	Update      *models.Update
 	User        *models.User
 	ShopEntries []*models.ShopEntry
 	ShopEntry   *models.ShopEntry

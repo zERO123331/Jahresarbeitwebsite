@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"time"
 )
 
 func (app *application) serverError(w http.ResponseWriter, r *http.Request, err error) {
@@ -37,44 +36,4 @@ func (app *application) render(w http.ResponseWriter, r *http.Request, status in
 
 func (app *application) newTemplateData(r *http.Request) templateData {
 	return templateData{}
-}
-
-func GetUpdates() []Update {
-	updates := []Update{}
-	for i := 1; i <= 25; i++ {
-		updates = append(updates, Update{
-			Title:       fmt.Sprintf("Test Update %d", i),
-			Author:      "Test Author",
-			Body:        "Test Body",
-			Created:     time.Now(),
-			LastUpdated: time.Now(),
-			ID:          i,
-		})
-	}
-	return updates
-}
-
-func GetLatestUpdate() Update {
-	return Update{
-		Title:       "Test Update",
-		Author:      "Test Author",
-		Body:        "Test Body",
-		Created:     time.Now(),
-		LastUpdated: time.Now(),
-		ID:          25,
-	}
-}
-
-func GetUpdateByID(id int) (Update, error) {
-	if id > 25 {
-		return Update{}, fmt.Errorf("update %d not found", id)
-	}
-	return Update{
-		Title:       fmt.Sprintf("Test Update %d", id),
-		Author:      "Test Author",
-		Body:        "Test Body",
-		Created:     time.Now(),
-		LastUpdated: time.Now(),
-		ID:          id,
-	}, nil
 }

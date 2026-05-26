@@ -25,7 +25,7 @@ func (app *application) updateView(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, r, fmt.Errorf("invalid update id: %s", params.ByName("id")))
 		return
 	}
-	update, err := GetUpdateByID(id)
+	update, err := app.models.Update.GetByID(id)
 	if err != nil {
 		app.serverError(w, r, err)
 		return
@@ -45,7 +45,11 @@ func (app *application) updateCreatePost(w http.ResponseWriter, r *http.Request)
 }
 
 func (app *application) updates(w http.ResponseWriter, r *http.Request) {
-	updates := GetUpdates()
+	updates, err := app.models.Update.GetAll()
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
 	app.render(w, r, http.StatusOK, "updates.gohtml", templateData{
 		Updates: updates,
 	})

@@ -18,7 +18,9 @@ type UpdateModel struct {
 	DB *sql.DB
 }
 
-func (m *UpdateModel) Insert(author User, title, body string) error {
+// TODO: implement
+
+func (m *UpdateModel) Insert(author *User, title, body string) error {
 	return nil
 }
 
@@ -30,7 +32,7 @@ func (m *UpdateModel) GetAll() ([]*Update, error) {
 	return nil, nil
 }
 
-func (m *UpdateModel) Update(id int, author User, title, body string) error {
+func (m *UpdateModel) Update(id int, author *User, title, body string) error {
 	return nil
 }
 
@@ -38,6 +40,6 @@ func (m *UpdateModel) Delete(id int) error {
 	return nil
 }
 
-func (m *UpdateModel) GetLatest(count int) (*[]Update, error) {
+func (m *UpdateModel) GetLatest(count int) ([]*Update, error) {
 	return nil, nil
 }

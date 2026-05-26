@@ -6,8 +6,12 @@ import (
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Server", "Go")
-	latestUpdate := GetLatestUpdate()
+	latestUpdates, err := app.models.Update.GetLatest(2)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
 	app.render(w, r, http.StatusOK, "home.gohtml", templateData{
-		Update: latestUpdate,
+		Updates: latestUpdates,
 	})
 }
