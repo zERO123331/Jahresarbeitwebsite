@@ -5,19 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/julienschmidt/httprouter"
 )
-
-type Update struct {
-	Title       string
-	Author      string
-	Body        string
-	ID          int
-	Created     time.Time
-	LastUpdated time.Time
-}
 
 func (app *application) updateView(w http.ResponseWriter, r *http.Request) {
 	params := httprouter.ParamsFromContext(r.Context())

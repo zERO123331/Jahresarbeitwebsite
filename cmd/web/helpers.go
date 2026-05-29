@@ -33,7 +33,7 @@ func (app *application) render(w http.ResponseWriter, r *http.Request, status in
 	ts, ok := app.templateCache[page]
 	if !ok {
 		err := fmt.Errorf("template %q not found", page)
-		app.serverError(w, r, err)
+		app.fallbackServerError(w, r, err)
 		return
 	}
 

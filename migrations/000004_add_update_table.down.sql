@@ -1,1 +1,1 @@
-DROP TABLE IF EXISTS update;
+DROP TABLE IF EXISTS updates;

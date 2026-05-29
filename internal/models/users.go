@@ -171,6 +171,6 @@ func (m *UserModel) Activate(id int) error {
 	stmt := `UPDATE users SET activated = true WHERE id = $1`
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	err := m.DB.QueryRowContext(ctx, stmt, id).Scan()
+	_, err := m.DB.ExecContext(ctx, stmt, id)
 	return err
 }
