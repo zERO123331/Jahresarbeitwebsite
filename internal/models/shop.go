@@ -3,7 +3,10 @@ package models
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"time"
+
+	"github.com/lib/pq"
 )
 
 type ShopEntry struct {
@@ -36,42 +39,86 @@ func (m *ShopModel) Insert(title, description string, price, quantity int, image
 	return id, nil
 }
 
-func (m *ShopModel) Buy(id, quantity int, user *User) error {
-	return nil
+func (m *ShopModel) Buy(id, quantity int) (int, error) {
+	stmt := `UPDATE shop SET quantity = quantity - $1 WHERE id = $2`
+	args := []any{quantity, id}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var quantityLeft int
+	err := m.DB.QueryRowContext(ctx, stmt, args).Scan(&quantityLeft)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return 0, ErrNoRecord
+		default:
+			return 0, err
+		}
+	}
+	return quantityLeft, nil
+
 }
 
-func (m *ShopModel) Restock(id, quantity int) error {
-	return nil
+func (m *ShopModel) Restock(id, quantity int) (int, error) {
+	stmt := `UPDATE shop SET quantity = quantity + $1 WHERE id = $2`
+	args := []any{quantity, id}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var quantityLeft int
+	err := m.DB.QueryRowContext(ctx, stmt, args).Scan(&quantityLeft)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			quantityLeft = 0
+		default:
+			return 0, err
+		}
+	}
+	return quantityLeft, nil
 }
 
 func (m *ShopModel) GetByID(id int) (*ShopEntry, error) {
-	return nil, nil
+	stmt := `SELECT id, created_at, title, description, price, quantity, image_urls, categories, user_id FROM shop WHERE id = $1`
+	args := []any{id}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	entry := &ShopEntry{}
+	err := m.DB.QueryRowContext(ctx, stmt, args).Scan(&entry.ID, &entry.CreatedAt, &entry.Title, &entry.Description, &entry.Price, &entry.Quantity, &entry.ImageURLS, &entry.Categories, &entry.UserID)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrNoRecord
+		default:
+			return nil, err
+		}
+	}
+	return entry, nil
 }
 
-func (m *ShopModel) GetByTitle(title string, itemsPerPage, Page int) ([]*ShopEntry, error) {
-	return nil, nil
-}
-
-func (m *ShopModel) SearchByCategories(categories []string, itemsPerPage, Page int) ([]*ShopEntry, error) {
-	return nil, nil
-}
-
-func (m *ShopModel) GetAll() ([]*ShopEntry, error) {
-	return nil, nil
-}
-
-func (m *ShopModel) Update(id int, title, description string, price, quantity int, imageURLs, categories []string) error {
-	return nil
-}
-
-func (m *ShopModel) Delete(id int) error {
-	return nil
-}
-
-func (m *ShopModel) GetByUserID(userID int) ([]*ShopEntry, error) {
-	return nil, nil
-}
-
-func (m *ShopModel) GetLowStock(threshold int) ([]*ShopEntry, error) {
-	return nil, nil
+func (m *ShopModel) GetAll(title string, genres []string, filters Filters) ([]*ShopEntry, error) {
+	query := `SELECT id, created_at, title, description, price, quantity, image_urls, categories, user_id FROM shop WHERE (LOWER(title) = LOWER($1) OR $1 = '') AND (categories @> $2 OR $2 = '{}') ORDER BY id`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	rows, err := m.DB.QueryContext(ctx, query, title, pq.Array(genres))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var entries []*ShopEntry
+	for rows.Next() {
+		var entry ShopEntry
+		err := rows.Scan(&entry.ID, &entry.CreatedAt, &entry.Title, &entry.Description, &entry.Price, &entry.Quantity, &entry.ImageURLS, &entry.Categories, &entry.UserID)
+		if err != nil {
+			return nil, err
+		}
+		entries = append(entries, &entry)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return entries, nil
 }

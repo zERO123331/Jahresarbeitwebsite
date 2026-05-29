@@ -21,25 +21,25 @@ type UpdateModel struct {
 // TODO: implement
 
 func (m *UpdateModel) Insert(author *User, title, body string) error {
-	return nil
+	return ErrNotImplemented
 }
 
 func (m *UpdateModel) GetByID(id int) (*Update, error) {
-	return nil, nil
+	return nil, ErrNotImplemented
 }
 
-func (m *UpdateModel) GetAll() ([]*Update, error) {
-	return nil, nil
+func (m *UpdateModel) GetAll(title string, filters Filters) ([]*Update, error) {
+	return nil, ErrNotImplemented
 }
 
 func (m *UpdateModel) Update(id int, author *User, title, body string) error {
-	return nil
+	return ErrNotImplemented
 }
 
 func (m *UpdateModel) Delete(id int) error {
-	return nil
+	return ErrNotImplemented
 }
 
 func (m *UpdateModel) GetLatest(count int) ([]*Update, error) {
-	return nil, nil
+	return nil, ErrNotImplemented
 }

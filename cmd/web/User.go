@@ -44,18 +44,18 @@ func (app *application) userCreatePost(w http.ResponseWriter, r *http.Request) {
 		Password2: r.FormValue("password2"),
 	}
 
-	form.Check(validator.MinChars(form.Name, 3), "username", fmt.Sprintf("Must be at least %d characters long.", 3))
-	form.Check(validator.NotBlank(form.Name), "username", "This field is required.")
-	form.Check(validator.MaxChars(form.Name, 25), "username", fmt.Sprintf("Must be at most %d characters long.", 255))
-	form.Check(validator.Matches(form.Name, validator.UserNameRX), "username", "Must be a valid username")
-	form.Check(validator.NotBlank(form.Email), "email", "This field is required.")
-	form.Check(validator.MaxChars(form.Email, 255), "email", fmt.Sprintf("Must be at most %d characters long.", 255))
-	form.Check(validator.Matches(form.Email, validator.EmailRX), "email", "Must be a valid email address")
-	form.Check(validator.NotBlank(form.Password), "password", "This field is required.")
-	form.Check(validator.MinChars(form.Password, 8), "password", fmt.Sprintf("Must be at least %d characters long.", 8))
-	form.Check(validator.MaxChars(form.Password, 72), "password", fmt.Sprintf("Must be at most %d characters long.", 72))
-	form.Check(validator.NotBlank(form.Password2), "password2", "This field is required.")
-	form.Check(form.Password == form.Password2, "password2", "Passwords do not match.")
+	form.CheckFieldErrors(validator.MinChars(form.Name, 3), "username", fmt.Sprintf("Must be at least %d characters long.", 3))
+	form.CheckFieldErrors(validator.NotBlank(form.Name), "username", "This field is required.")
+	form.CheckFieldErrors(validator.MaxChars(form.Name, 25), "username", fmt.Sprintf("Must be at most %d characters long.", 255))
+	form.CheckFieldErrors(validator.Matches(form.Name, validator.UserNameRX), "username", "Must be a valid username")
+	form.CheckFieldErrors(validator.NotBlank(form.Email), "email", "This field is required.")
+	form.CheckFieldErrors(validator.MaxChars(form.Email, 255), "email", fmt.Sprintf("Must be at most %d characters long.", 255))
+	form.CheckFieldErrors(validator.Matches(form.Email, validator.EmailRX), "email", "Must be a valid email address")
+	form.CheckFieldErrors(validator.NotBlank(form.Password), "password", "This field is required.")
+	form.CheckFieldErrors(validator.MinChars(form.Password, 8), "password", fmt.Sprintf("Must be at least %d characters long.", 8))
+	form.CheckFieldErrors(validator.MaxChars(form.Password, 72), "password", fmt.Sprintf("Must be at most %d characters long.", 72))
+	form.CheckFieldErrors(validator.NotBlank(form.Password2), "password2", "This field is required.")
+	form.CheckFieldErrors(form.Password == form.Password2, "password2", "Passwords do not match.")
 
 	// TODO: fix CSS for error messages
 
@@ -101,12 +101,12 @@ func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
 		Password: r.FormValue("password"),
 	}
 
-	form.Check(validator.NotBlank(form.Email), "email", "This field is required.")
-	form.Check(validator.Matches(form.Email, validator.EmailRX), "email", "Must be a valid email address")
-	form.Check(validator.MaxChars(form.Email, 255), "email", fmt.Sprintf("Must be at most %d characters long.", 255))
-	form.Check(validator.NotBlank(form.Password), "password", "This field is required.")
-	form.Check(validator.MinChars(form.Password, 8), "password", fmt.Sprintf("Must be at least %d characters long.", 8))
-	form.Check(validator.MaxChars(form.Password, 72), "password", fmt.Sprintf("Must be at most %d characters long.", 72))
+	form.CheckFieldErrors(validator.NotBlank(form.Email), "email", "This field is required.")
+	form.CheckFieldErrors(validator.Matches(form.Email, validator.EmailRX), "email", "Must be a valid email address")
+	form.CheckFieldErrors(validator.MaxChars(form.Email, 255), "email", fmt.Sprintf("Must be at most %d characters long.", 255))
+	form.CheckFieldErrors(validator.NotBlank(form.Password), "password", "This field is required.")
+	form.CheckFieldErrors(validator.MinChars(form.Password, 8), "password", fmt.Sprintf("Must be at least %d characters long.", 8))
+	form.CheckFieldErrors(validator.MaxChars(form.Password, 72), "password", fmt.Sprintf("Must be at most %d characters long.", 72))
 	if !form.Valid() {
 		data := app.newTemplateData(r)
 		data.Form = form

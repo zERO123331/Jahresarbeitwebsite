@@ -1,8 +1,13 @@
 package main
 
 import (
+	"Jahresarbeitwebsite/internal/validator"
 	"fmt"
 	"net/http"
+	"net/url"
+	"runtime/debug"
+	"strconv"
+	"strings"
 )
 
 func (app *application) serverError(w http.ResponseWriter, r *http.Request, err error) {
@@ -13,6 +18,11 @@ func (app *application) serverError(w http.ResponseWriter, r *http.Request, err 
 
 	app.logger.Error(err.Error(), "method", method, "uri", uri)
 	app.render(w, r, http.StatusInternalServerError, "500.gohtml", app.newTemplateData(r))
+}
+
+func (app *application) fallbackServerError(w http.ResponseWriter, r *http.Request, err error) {
+	app.logger.Error("Fallback Server Error", "error", err.Error(), "method", r.Method, "uri", r.URL.RequestURI(), "remote_addr", r.RemoteAddr, "trace", debug.Stack())
+	http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 }
 
 func (app *application) clientError(w http.ResponseWriter, r *http.Request, status int) {
@@ -30,10 +40,39 @@ func (app *application) render(w http.ResponseWriter, r *http.Request, status in
 	w.WriteHeader(status)
 	err := ts.ExecuteTemplate(w, "base", data)
 	if err != nil {
-		app.serverError(w, r, err)
+		app.fallbackServerError(w, r, err)
 	}
 }
 
 func (app *application) newTemplateData(r *http.Request) templateData {
 	return templateData{}
+}
+
+func (app *application) readString(qs url.Values, key string, defaultValue string) string {
+	s := qs.Get(key)
+	if s == "" {
+		return defaultValue
+	}
+	return s
+}
+
+func (app *application) readCSV(qs url.Values, key string, defaultValue []string) []string {
+	s := qs.Get(key)
+	if s == "" {
+		return defaultValue
+	}
+	return strings.Split(s, ",")
+}
+
+func (app *application) readInt(qs url.Values, key string, defaultValue int, v *validator.Validator) int {
+	s := qs.Get(key)
+	if s == "" {
+		return defaultValue
+	}
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		v.AddFieldError(key, "must be an integer value")
+		return defaultValue
+	}
+	return i
 }

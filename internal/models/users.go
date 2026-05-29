@@ -40,7 +40,7 @@ func (p *password) Matches(plaintextPassword string) (bool, error) {
 	err := bcrypt.CompareHashAndPassword(p.hash, []byte(plaintextPassword))
 	if err != nil {
 		switch {
-		case err == bcrypt.ErrMismatchedHashAndPassword:
+		case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
 			return false, nil
 		default:
 			return false, err
@@ -74,10 +74,10 @@ func (m *UserModel) Insert(user *User) (int, error) {
 	return user.ID, nil
 }
 
-func (m UserModel) GetByEmail(email string) (*User, error) {
+func (m *UserModel) GetByEmail(email string) (*User, error) {
 	query := `
 SELECT id, created_at, name, email, password_hash, activated, version
-FROM user
+FROM users
 WHERE email = $1`
 	var user User
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -126,7 +126,7 @@ WHERE email = $1`
 		}
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	err = bcrypt.CompareHashAndPassword(hashedPassword, []byte(password))
 	if err != nil {
 		return 0, ErrInvalidCredentials
 	}
@@ -137,9 +137,9 @@ WHERE email = $1`
 	return id, nil
 }
 
-func (m UserModel) Update(user *User) error {
+func (m *UserModel) Update(user *User) error {
 	query := `
-UPDATE user
+UPDATE users
 SET name = $1, email = $2, password_hash = $3, activated = $4, version = version + 1
 WHERE id = $5 AND version = $6
 RETURNING version`
@@ -168,7 +168,7 @@ RETURNING version`
 }
 
 func (m *UserModel) Activate(id int) error {
-	stmt := `UPDATE user SET activated = true WHERE id = $1`
+	stmt := `UPDATE users SET activated = true WHERE id = $1`
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	err := m.DB.QueryRowContext(ctx, stmt, id).Scan()

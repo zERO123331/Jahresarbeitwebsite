@@ -2,11 +2,6 @@ package models
 
 import (
 	"database/sql"
-	"errors"
-)
-
-var (
-	ErrProductNotFound = errors.New("product not found")
 )
 
 type Models struct {

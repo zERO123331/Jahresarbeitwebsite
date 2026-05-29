@@ -14,11 +14,12 @@ var (
 
 type Validator struct {
 	FieldErrors    map[string]string
+	FilterErrors   map[string]string
 	NonFieldErrors []string
 }
 
 func New() *Validator {
-	return &Validator{FieldErrors: make(map[string]string)}
+	return &Validator{FieldErrors: make(map[string]string), NonFieldErrors: make([]string, 0), FilterErrors: make(map[string]string)}
 }
 
 func (v *Validator) Valid() bool {
@@ -38,9 +39,30 @@ func (v *Validator) AddNonFieldError(message string) {
 	v.NonFieldErrors = append(v.NonFieldErrors, message)
 }
 
-func (v *Validator) Check(ok bool, key, message string) {
+func (v *Validator) AddFilterError(key, message string) {
+	if v.FilterErrors == nil {
+		v.FilterErrors = make(map[string]string)
+	}
+	if _, exists := v.FilterErrors[key]; !exists {
+		v.FilterErrors[key] = message
+	}
+}
+
+func (v *Validator) CheckFieldErrors(ok bool, key, message string) {
 	if !ok {
 		v.AddFieldError(key, message)
+	}
+}
+
+func (v *Validator) CheckFilterErrors(ok bool, key, message string) {
+	if !ok {
+		v.AddFilterError(key, message)
+	}
+}
+
+func (v *Validator) CheckNonFieldErrors(ok bool, message string) {
+	if !ok {
+		v.AddNonFieldError(message)
 	}
 }
 
