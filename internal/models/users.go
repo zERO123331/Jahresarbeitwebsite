@@ -1,7 +1,6 @@
 package models
 
 import (
-	"Jahresarbeitwebsite/internal/validator"
 	"context"
 	"database/sql"
 	"errors"
@@ -104,31 +103,38 @@ WHERE email = $1`
 }
 
 func (m *UserModel) Authenticate(email, password string) (int, error) {
-	var user User
+	var (
+		id             int
+		hashedPassword []byte
+		activated      bool
+	)
 	query := `
-SELECT id, created_at, name, email, password_hash, activated, version
+SELECT id, password_hash, activated
 FROM users
 WHERE email = $1`
 
-	err := m.DB.QueryRow(query, email).Scan(&user.ID, &user.CreatedAt, &user.Name, &user.Email, &user.PasswordHash, &user.Activated, &user.Version)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := m.DB.QueryRowContext(ctx, query, email).Scan(&id, &hashedPassword, &activated)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
-			return 0, ErrNoRecord
+			return 0, ErrInvalidCredentials
 		default:
 			return 0, err
 		}
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	if err != nil {
 		return 0, ErrInvalidCredentials
 	}
-	if !user.Activated {
+	if !activated {
 		return 0, ErrUserNotActivated
 	}
 
-	return user.ID, nil
+	return id, nil
 }
 
 func (m UserModel) Update(user *User) error {
@@ -167,33 +173,4 @@ func (m *UserModel) Activate(id int) error {
 	defer cancel()
 	err := m.DB.QueryRowContext(ctx, stmt, id).Scan()
 	return err
-}
-
-func (m *UserModel) Exists(id int) (bool, error) {
-
-	return false, nil
-}
-
-func ValidateEmail(v *validator.Validator, email string) {
-	v.Check(email != "", "email", "Email must be provided")
-	v.Check(validator.Matches(email, validator.EmailRX), "email", "Email must be a valid email address")
-}
-
-func ValidatePasswordPlaintext(v *validator.Validator, password string) {
-	v.Check(password != "", "password", "Password must be provided")
-	v.Check(len(password) >= 8, "password", "Password must be at least 8 characters long")
-	v.Check(len(password) <= 72, "password", "Password must be at most 255 characters long")
-}
-
-func ValidateUser(v *validator.Validator, user *User) {
-	v.Check(user.Name != "", "name", "Name must be provided")
-	v.Check(len(user.Name) <= 255, "name", "Name must be at most 255 characters long")
-
-	if user.Password.plaintext != nil {
-		ValidatePasswordPlaintext(v, *user.Password.plaintext)
-	}
-
-	if user.Password.hash == nil {
-		panic("missing password hash for user")
-	}
 }

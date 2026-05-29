@@ -13,6 +13,7 @@ type templateData struct {
 	ShopEntries []*models.ShopEntry
 	ShopEntry   *models.ShopEntry
 	Form        any
+	Flash       string
 }
 
 func newTemplateCache() (map[string]*template.Template, error) {

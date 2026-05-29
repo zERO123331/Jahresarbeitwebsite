@@ -10,6 +10,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/alexedwards/scs/postgresstore"
+	"github.com/alexedwards/scs/v2"
 	_ "github.com/lib/pq"
 )
 
@@ -22,13 +24,20 @@ type config struct {
 		maxIdleConns int
 		maxIdleTime  time.Duration
 	}
+
+	limiter struct {
+		rps     float64
+		burst   int
+		enabled bool
+	}
 }
 
 type application struct {
-	config        config
-	logger        *slog.Logger
-	templateCache map[string]*template.Template
-	models        models.Models
+	config         config
+	logger         *slog.Logger
+	templateCache  map[string]*template.Template
+	models         models.Models
+	sessionManager *scs.SessionManager
 }
 
 func main() {
@@ -41,6 +50,9 @@ func main() {
 	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "maximum number of open connections to the database")
 	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "maximum number of idle connections in the pool")
 	flag.DurationVar(&cfg.db.maxIdleTime, "db-max-idle-time", 15*time.Minute, "maximum amount of time a connection may be idle before being closed")
+	flag.Float64Var(&cfg.limiter.rps, "limiter-rps", 10, "requests per second limit")
+	flag.IntVar(&cfg.limiter.burst, "limiter-burst", 20, "maximum burst of requests")
+	flag.BoolVar(&cfg.limiter.enabled, "limiter-enabled", true, "enable rate limiter")
 	flag.Parse()
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
@@ -58,11 +70,16 @@ func main() {
 	logger.Info("connection to database established")
 	defer db.Close()
 
+	sessionManager := scs.New()
+	sessionManager.Store = postgresstore.New(db)
+	sessionManager.Lifetime = 12 * time.Hour
+
 	app := &application{
-		config:        cfg,
-		logger:        logger,
-		templateCache: templateCache,
-		models:        models.NewModels(db),
+		config:         cfg,
+		logger:         logger,
+		templateCache:  templateCache,
+		models:         models.NewModels(db),
+		sessionManager: sessionManager,
 	}
 
 	err = app.serve()

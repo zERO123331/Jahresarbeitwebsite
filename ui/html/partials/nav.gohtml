@@ -1,8 +1,18 @@
 {{define "nav"}}
     <nav class="navbar">
-        <a class="left" href='/'>Home</a>
-        <a class="left" href="/update/list">Updates</a>
-        <a class="left" href="/shop">Shop</a>
-        <a class="right" href="/user/create">Login</a>
+        <div class="left">
+        <a href='/'>Home</a>
+        <a href="/update/list">Updates</a>
+        <a href="/shop">Shop</a>
+        </div>
+        <div class="right">
+        {{with .User}}
+            <a>.User.Name</a>
+            <a href="/user/logout">Logout</a>
+        {{else}}
+        <a href="/user/login">Login</a>
+            <a href="/user/create">Register</a>
+            {{end}}
+        </div>
     </nav>
 {{end}}

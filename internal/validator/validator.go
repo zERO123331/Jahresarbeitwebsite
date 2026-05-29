@@ -8,33 +8,39 @@ import (
 )
 
 var (
-	EmailRX = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+	EmailRX    = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+	UserNameRX = regexp.MustCompile("^[a-zA-Z0-9_-]{3,25}$")
 )
 
 type Validator struct {
-	Errors map[string]string
+	FieldErrors    map[string]string
+	NonFieldErrors []string
 }
 
 func New() *Validator {
-	return &Validator{Errors: make(map[string]string)}
+	return &Validator{FieldErrors: make(map[string]string)}
 }
 
 func (v *Validator) Valid() bool {
-	return len(v.Errors) == 0
+	return len(v.FieldErrors) == 0 && len(v.NonFieldErrors) == 0
 }
 
-func (v *Validator) AddError(key, message string) {
-	if v.Errors == nil {
-		v.Errors = make(map[string]string)
+func (v *Validator) AddFieldError(key, message string) {
+	if v.FieldErrors == nil {
+		v.FieldErrors = make(map[string]string)
 	}
-	if _, exists := v.Errors[key]; !exists {
-		v.Errors[key] = message
+	if _, exists := v.FieldErrors[key]; !exists {
+		v.FieldErrors[key] = message
 	}
+}
+
+func (v *Validator) AddNonFieldError(message string) {
+	v.NonFieldErrors = append(v.NonFieldErrors, message)
 }
 
 func (v *Validator) Check(ok bool, key, message string) {
 	if !ok {
-		v.AddError(key, message)
+		v.AddFieldError(key, message)
 	}
 }
 
