@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/lib/pq"
@@ -100,7 +101,12 @@ func (m *ShopModel) GetByID(id int) (*ShopEntry, error) {
 }
 
 func (m *ShopModel) GetAll(title string, categories []string, filters Filters) ([]*ShopEntry, error) {
-	query := `SELECT id, created_at, title, description, price, quantity, image_urls, categories, user_id FROM shopentry WHERE (LOWER(title) = LOWER($1) OR $1 = '') AND (categories @> $2 OR $2 = '{}') ORDER BY id`
+	query := fmt.Sprintf(`
+SELECT id, created_at, title, description, price, quantity, image_urls, categories, user_id 
+FROM shopentry 
+WHERE (to_tsvector('simple', title) @@ plainto_tsquery('simple', $1) OR $1 = '') 
+  AND (categories @> $2 OR $2 = '{}') 
+ORDER BY %s %s, id ASC`, filters.sortColumn(), filters.sortDirection())
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	rows, err := m.DB.QueryContext(ctx, query, title, pq.Array(categories))

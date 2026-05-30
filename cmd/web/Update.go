@@ -2,6 +2,7 @@ package main
 
 import (
 	"Jahresarbeitwebsite/internal/models"
+	"Jahresarbeitwebsite/internal/validator"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -29,7 +30,7 @@ func (app *application) updateView(w http.ResponseWriter, r *http.Request) {
 
 // TODO: implement update Create
 func (app *application) updateCreate(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Display a form for creating a new snippet..."))
+
 }
 
 // TODO: implement update Create Post
@@ -38,9 +39,21 @@ func (app *application) updateCreatePost(w http.ResponseWriter, r *http.Request)
 	w.Write([]byte("Save a new snippet..."))
 }
 
-// TODO: rework updates to use pages and search stuff
 func (app *application) updates(w http.ResponseWriter, r *http.Request) {
-	updates, err := app.models.Update.GetAll("", models.Filters{})
+	var input struct {
+		models.Filters
+	}
+
+	v := validator.New()
+	qs := r.URL.Query()
+
+	input.Filters.Page = app.readInt(qs, "page", 1, v)
+	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
+	input.Filters.Sort = app.readString(qs, "sort", "id")
+	input.Filters.SortSafelist = []string{"id", "title", "updated_at"}
+	models.ValidateFilters(v, input.Filters)
+
+	updates, err := app.models.Update.GetAll("", input.Filters)
 	if err != nil {
 		app.serverError(w, r, err)
 		return

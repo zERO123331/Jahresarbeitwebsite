@@ -3,6 +3,8 @@ package models
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"fmt"
 	"time"
 )
 
@@ -19,8 +21,6 @@ type Update struct {
 type UpdateModel struct {
 	DB *sql.DB
 }
-
-// TODO: implement
 
 func (m *UpdateModel) Insert(userID int, title, body string) (int, error) {
 	stmt := `INSERT INTO updates (user_id, title, body) VALUES ($1, $2, $3) RETURNING id`
@@ -50,7 +50,11 @@ func (m *UpdateModel) GetByID(id int) (*Update, error) {
 }
 
 func (m *UpdateModel) GetAll(title string, filters Filters) ([]*Update, error) {
-	stmt := `SELECT id, user_id, title, body, created_at, updated_at, version FROM updates WHERE (LOWER(title) = LOWER($1) OR $1 = '') ORDER BY id`
+	stmt := fmt.Sprintf(`
+SELECT id, user_id, title, body, created_at, updated_at, version 
+FROM updates 
+WHERE (to_tsvector('simple', title) @@ plainto_tsquery('simple', $1) OR $1 = '') 
+ORDER BY %s %s, id ASC`, filters.sortColumn(), filters.sortDirection())
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	rows, err := m.DB.QueryContext(ctx, stmt, title)
@@ -73,9 +77,22 @@ func (m *UpdateModel) GetAll(title string, filters Filters) ([]*Update, error) {
 	return updates, nil
 }
 
-func (m *UpdateModel) Update(id int, title, body string) error {
+func (m *UpdateModel) Update(id int, title, body string, version int) error {
+	stmt := `UPDATE updates SET title = $1, body = $2, version = version + 1, updated_at = NOW() WHERE id = $3 AND version = $4 RETURNING version`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 
-	return ErrNotImplemented
+	var updatedVersion int
+
+	err := m.DB.QueryRowContext(ctx, stmt, title, body, id, version).Scan(&updatedVersion)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrEditConflict
+		}
+		return err
+	}
+
+	return nil
 }
 
 func (m *UpdateModel) Delete(id int) error {
@@ -85,8 +102,4 @@ func (m *UpdateModel) Delete(id int) error {
 
 	_, err := m.DB.ExecContext(ctx, stmt, id)
 	return err
-}
-
-func (m *UpdateModel) GetLatest(count int) ([]*Update, error) {
-	return nil, ErrNotImplemented
 }

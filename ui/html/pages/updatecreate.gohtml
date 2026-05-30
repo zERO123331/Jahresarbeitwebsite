@@ -1,0 +1,20 @@
+{{define "title"}}Create Update{{end}}
+{{define "main"}}
+    <form action="/update/create" method="post">
+        <div>
+            <label for="title">Title</label>
+            {{with .Form.Validator.FieldErrors.title}}
+                <label class="error">{{.}}</label>
+            {{end}}
+            <input type="text" name="title" id="title" required>
+        </div>
+        <div>
+            <label for="body"></label>
+            {{with .Form.Validator.FieldErrors.body}}
+                <label class="error">{{.}}</label>
+            {{end}}
+            <input type="text" name="body" id="body" required>
+        </div>
+        <button type="submit">Create</button>
+    </form>
+{{end}}
