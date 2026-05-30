@@ -4,7 +4,7 @@
     <h2><a href="/update/list">Latest Updates</a></h2>
         {{range .Updates}}
     <h3><a href="/update/view/{{.ID}}">{{.Title}}</a></h3>
-        <h4>{{.Author.Name}}</h4>
+        <h4>{{.UserID}}</h4>
         <p>{{.Body}}</p>
         {{end}}
 {{end}}

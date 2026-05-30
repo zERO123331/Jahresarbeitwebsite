@@ -6,6 +6,7 @@ import (
 )
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
+	data := app.newTemplateData(r)
 	filters := models.Filters{
 		PageSize:     2,
 		Page:         1,
@@ -17,7 +18,6 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, r, err)
 		return
 	}
-	app.render(w, r, http.StatusOK, "home.gohtml", templateData{
-		Updates: latestUpdates,
-	})
+	data.Updates = latestUpdates
+	app.render(w, r, http.StatusOK, "home.gohtml", data)
 }

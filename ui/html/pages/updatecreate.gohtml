@@ -9,11 +9,11 @@
             <input type="text" name="title" id="title" required>
         </div>
         <div>
-            <label for="body"></label>
+            <label for="body">Content</label>
             {{with .Form.Validator.FieldErrors.body}}
                 <label class="error">{{.}}</label>
             {{end}}
-            <input type="text" name="body" id="body" required>
+            <textarea name="body" id="body" cols="30" rows="10"></textarea>
         </div>
         <button type="submit">Create</button>
     </form>

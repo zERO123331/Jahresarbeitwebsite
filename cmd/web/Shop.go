@@ -9,6 +9,7 @@ import (
 )
 
 func (app *application) shopPage(w http.ResponseWriter, r *http.Request) {
+	data := app.newTemplateData(r)
 	var input struct {
 		Title      string
 		Categories []string
@@ -35,12 +36,12 @@ func (app *application) shopPage(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, r, err)
 		return
 	}
-	app.render(w, r, http.StatusOK, "shop.gohtml", templateData{
-		ShopEntries: entries,
-	})
+	data.ShopEntries = entries
+	app.render(w, r, http.StatusOK, "shop.gohtml", data)
 }
 
 func (app *application) shopEntry(w http.ResponseWriter, r *http.Request) {
+	data := app.newTemplateData(r)
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil || id < 1 {
 		app.serverError(w, r, fmt.Errorf("invalid shop entry id: %s", r.PathValue("id")))
@@ -51,7 +52,6 @@ func (app *application) shopEntry(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, r, err)
 		return
 	}
-	app.render(w, r, http.StatusOK, "shopentry.gohtml", templateData{
-		ShopEntry: entry,
-	})
+	data.ShopEntry = entry
+	app.render(w, r, http.StatusOK, "shopentry.gohtml", data)
 }

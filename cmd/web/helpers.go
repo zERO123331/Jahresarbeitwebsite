@@ -2,6 +2,7 @@ package main
 
 import (
 	"Jahresarbeitwebsite/internal/validator"
+	"bytes"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -37,15 +38,21 @@ func (app *application) render(w http.ResponseWriter, r *http.Request, status in
 		return
 	}
 
-	w.WriteHeader(status)
-	err := ts.ExecuteTemplate(w, "base", data)
+	buf := new(bytes.Buffer)
+
+	err := ts.ExecuteTemplate(buf, "base", data)
 	if err != nil {
 		app.fallbackServerError(w, r, err)
 	}
+	w.WriteHeader(status)
+	buf.WriteTo(w)
 }
 
 func (app *application) newTemplateData(r *http.Request) templateData {
-	return templateData{}
+	return templateData{
+		Flash:           app.sessionManager.PopString(r.Context(), "flash"),
+		IsAuthenticated: app.isAuthenticated(r),
+	}
 }
 
 func (app *application) readString(qs url.Values, key string, defaultValue string) string {
@@ -75,4 +82,8 @@ func (app *application) readInt(qs url.Values, key string, defaultValue int, v *
 		return defaultValue
 	}
 	return i
+}
+
+func (app *application) isAuthenticated(r *http.Request) bool {
+	return app.sessionManager.Get(r.Context(), "authenticatedUserID") != nil
 }

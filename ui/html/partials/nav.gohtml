@@ -6,9 +6,11 @@
         <a href="/shop">Shop</a>
         </div>
         <div class="right">
-        {{with .User}}
-            <a>.User.Name</a>
-            <a href="/user/logout">Logout</a>
+        {{with .IsAuthenticated}}
+            <a href="/update/create">Create Update</a>
+            <form action="/user/logout" method="post">
+                <button>Logout</button>
+            </form>
         {{else}}
         <a href="/user/login">Login</a>
             <a href="/user/create">Register</a>

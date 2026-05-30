@@ -7,6 +7,7 @@ import (
 	"github.com/justinas/alice"
 )
 
+// TODO: add user stuff
 func (app *application) routes() http.Handler {
 	router := httprouter.New()
 

@@ -30,7 +30,7 @@ func (m *UpdateModel) Insert(userID int, title, body string) (int, error) {
 	defer cancel()
 
 	var ID int
-	err := m.DB.QueryRowContext(ctx, stmt, args).Scan(&ID)
+	err := m.DB.QueryRowContext(ctx, stmt, args...).Scan(&ID)
 	if err != nil {
 		return 0, err
 	}
@@ -42,7 +42,7 @@ func (m *UpdateModel) GetByID(id int) (*Update, error) {
 	stmt := `SELECT id, user_id, title, body, created_at, updated_at, version FROM updates WHERE id = $1`
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	err := m.DB.QueryRowContext(ctx, stmt, id).Scan(update.ID, update.UserID, update.Title, update.Body, update.Created, update.LastUpdated, update.Version)
+	err := m.DB.QueryRowContext(ctx, stmt, id).Scan(&update.ID, &update.UserID, &update.Title, &update.Body, &update.Created, &update.LastUpdated, &update.Version)
 	if err != nil {
 		return nil, err
 	}
@@ -50,6 +50,7 @@ func (m *UpdateModel) GetByID(id int) (*Update, error) {
 }
 
 func (m *UpdateModel) GetAll(title string, filters Filters) ([]*Update, error) {
+	// TODO: add pagination
 	stmt := fmt.Sprintf(`
 SELECT id, user_id, title, body, created_at, updated_at, version 
 FROM updates 

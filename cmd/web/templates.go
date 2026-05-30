@@ -7,13 +7,14 @@ import (
 )
 
 type templateData struct {
-	Updates     []*models.Update
-	Update      *models.Update
-	User        *models.User
-	ShopEntries []*models.ShopEntry
-	ShopEntry   *models.ShopEntry
-	Form        any
-	Flash       string
+	Updates         []*models.Update
+	Update          *models.Update
+	User            *models.User
+	ShopEntries     []*models.ShopEntry
+	ShopEntry       *models.ShopEntry
+	Form            any
+	Flash           string
+	IsAuthenticated bool
 }
 
 func newTemplateCache() (map[string]*template.Template, error) {

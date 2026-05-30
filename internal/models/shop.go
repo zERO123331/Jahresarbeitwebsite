@@ -101,6 +101,7 @@ func (m *ShopModel) GetByID(id int) (*ShopEntry, error) {
 }
 
 func (m *ShopModel) GetAll(title string, categories []string, filters Filters) ([]*ShopEntry, error) {
+	// TODO: add pagination
 	query := fmt.Sprintf(`
 SELECT id, created_at, title, description, price, quantity, image_urls, categories, user_id 
 FROM shopentry 
