@@ -3,12 +3,16 @@ package main
 import (
 	"Jahresarbeitwebsite/internal/validator"
 	"bytes"
+	"errors"
 	"fmt"
+	"image"
 	"net/http"
 	"net/url"
 	"runtime/debug"
 	"strconv"
 	"strings"
+
+	"github.com/go-playground/form/v4"
 )
 
 func (app *application) serverError(w http.ResponseWriter, r *http.Request, err error) {
@@ -86,4 +90,39 @@ func (app *application) readInt(qs url.Values, key string, defaultValue int, v *
 
 func (app *application) isAuthenticated(r *http.Request) bool {
 	return app.sessionManager.Get(r.Context(), "authenticatedUserID") != nil
+}
+
+func (app *application) decodePostForm(r *http.Request, dst any) error {
+	err := r.ParseForm()
+	if err != nil {
+		return err
+	}
+	err = app.formDecoder.Decode(dst, r.PostForm)
+
+	if err != nil {
+		if _, ok := errors.AsType[*form.InvalidDecoderError](err); ok {
+			panic(err)
+		}
+		return err
+	}
+
+	return nil
+}
+
+func (app *application) getFormImage(r *http.Request) (image.Image, error) {
+	err := r.ParseMultipartForm(1024 * 1024)
+	if err != nil {
+		return nil, err
+	}
+	file, _, err := r.FormFile("image")
+
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+	img, _, err := image.Decode(file)
+	if err != nil {
+		return nil, err
+	}
+	return img, nil
 }

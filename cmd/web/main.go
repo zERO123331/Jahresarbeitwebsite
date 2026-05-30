@@ -12,6 +12,7 @@ import (
 
 	"github.com/alexedwards/scs/postgresstore"
 	"github.com/alexedwards/scs/v2"
+	"github.com/go-playground/form/v4"
 	_ "github.com/lib/pq"
 )
 
@@ -36,6 +37,7 @@ type application struct {
 	config         config
 	logger         *slog.Logger
 	templateCache  map[string]*template.Template
+	formDecoder    *form.Decoder
 	models         models.Models
 	sessionManager *scs.SessionManager
 }
@@ -62,6 +64,9 @@ func main() {
 		logger.Error(err.Error())
 		os.Exit(1)
 	}
+
+	formDecoder := form.NewDecoder()
+
 	db, err := OpenDB(cfg)
 	if err != nil {
 		logger.Error(err.Error())
@@ -73,11 +78,13 @@ func main() {
 	sessionManager := scs.New()
 	sessionManager.Store = postgresstore.New(db)
 	sessionManager.Lifetime = 12 * time.Hour
+	sessionManager.Cookie.Secure = true
 
 	app := &application{
 		config:         cfg,
 		logger:         logger,
 		templateCache:  templateCache,
+		formDecoder:    formDecoder,
 		models:         models.NewModels(db),
 		sessionManager: sessionManager,
 	}

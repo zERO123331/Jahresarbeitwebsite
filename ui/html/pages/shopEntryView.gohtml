@@ -1,0 +1,16 @@
+{{define "title"}}{{.ShopEntry.Title}}{{end}}
+
+{{define "main"}}
+    <div>
+        <h1>{{.ShopEntry.Title}}</h1>
+        {{range .ShopEntry.ImageURLS}}
+            <img src="{{.}}" alt="Image">
+        {{end}}
+        <h2>Description</h2>
+        <p>{{.ShopEntry.Description}}</p>
+        <p>Price: {{.ShopEntry.Price}} coin</p>
+        <p>Stock: {{.ShopEntry.Quantity}} Items Left</p>
+        <p>Categories: {{range .ShopEntry.Categories}}{{.}}, {{end}}
+        </p>
+    </div>
+{{end}}

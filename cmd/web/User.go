@@ -9,17 +9,17 @@ import (
 )
 
 type UserCreateForm struct {
-	Name      string `form:"username"`
-	Email     string `form:"email"`
-	Password  string `form:"password"`
-	Password2 string `form:"password2"`
-	validator.Validator
+	Name                string `form:"username"`
+	Email               string `form:"email"`
+	Password            string `form:"password"`
+	Password2           string `form:"password2"`
+	validator.Validator `form:"-"`
 }
 
 type userLoginForm struct {
-	Email    string `form:"email"`
-	Password string `form:"password"`
-	validator.Validator
+	Email               string `form:"email"`
+	Password            string `form:"password"`
+	validator.Validator `form:"-"`
 }
 
 func (app *application) userCreate(w http.ResponseWriter, r *http.Request) {
@@ -31,17 +31,12 @@ func (app *application) userCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) userCreatePost(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
+
+	var form UserCreateForm
+	err := app.decodePostForm(r, &form)
 	if err != nil {
 		app.clientError(w, r, http.StatusBadRequest)
 		return
-	}
-
-	form := UserCreateForm{
-		Name:      r.FormValue("username"),
-		Email:     r.FormValue("email"),
-		Password:  r.FormValue("password"),
-		Password2: r.FormValue("password2"),
 	}
 
 	form.CheckFieldErrors(validator.MinChars(form.Name, 3), "username", fmt.Sprintf("Must be at least %d characters long.", 3))
@@ -91,14 +86,12 @@ func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
+
+	var form userLoginForm
+	err := app.decodePostForm(r, &form)
 	if err != nil {
 		app.clientError(w, r, http.StatusBadRequest)
 		return
-	}
-	form := userLoginForm{
-		Email:    r.FormValue("email"),
-		Password: r.FormValue("password"),
 	}
 
 	form.CheckFieldErrors(validator.NotBlank(form.Email), "email", "This field is required.")
@@ -107,6 +100,7 @@ func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
 	form.CheckFieldErrors(validator.NotBlank(form.Password), "password", "This field is required.")
 	form.CheckFieldErrors(validator.MinChars(form.Password, 8), "password", fmt.Sprintf("Must be at least %d characters long.", 8))
 	form.CheckFieldErrors(validator.MaxChars(form.Password, 72), "password", fmt.Sprintf("Must be at most %d characters long.", 72))
+
 	if !form.Valid() {
 		data := app.newTemplateData(r)
 		data.Form = form

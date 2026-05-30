@@ -88,7 +88,7 @@ func (m *ShopModel) GetByID(id int) (*ShopEntry, error) {
 	defer cancel()
 
 	entry := &ShopEntry{}
-	err := m.DB.QueryRowContext(ctx, stmt, args...).Scan(&entry.ID, &entry.CreatedAt, &entry.Title, &entry.Description, &entry.Price, &entry.Quantity, &entry.ImageURLS, &entry.Categories, &entry.UserID)
+	err := m.DB.QueryRowContext(ctx, stmt, args...).Scan(&entry.ID, &entry.CreatedAt, &entry.Title, &entry.Description, &entry.Price, &entry.Quantity, pq.Array(&entry.ImageURLS), pq.Array(&entry.Categories), &entry.UserID)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):

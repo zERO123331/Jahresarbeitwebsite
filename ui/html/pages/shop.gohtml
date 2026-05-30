@@ -1,8 +1,31 @@
 {{define "title"}}Shop{{end}}
 {{define "main"}}
+    <fieldset>
+        <legend>Shop</legend>
+        <select name="order" id="order">
+            <option value="id">ID</option>
+            <option value="title">Alphabetically</option>
+            <option value="price">Price</option>
+            <option value="rating">Quantity</option>
+        </select>
+
+    </fieldset>
+    <div class="shop-list">
     {{range .ShopEntries}}
-        <div>
-            <h2>{{.Title}}</h2>
+        <div class="shop-entry">
+            <ol class="shop-entry-images">
+                {{range .ImageURLS}}
+                <li class="shop-entry-image">
+                    <img src="{{.}}" alt="image">
+                </li>
+                {{end}}
+            </ol>
+            <div class="shop-entry-info">
+                <h4 class="shop-entry-info-userid">{{.UserID}}</h4>
+                <h2 class="shop-entry-info-title">{{.Title}}</h2>
+                <h3 class="shop-entry-info-price">{{.Price}} coin</h3>
+            </div>
         </div>
     {{end}}
+    </div>
 {{end}}

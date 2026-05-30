@@ -3,6 +3,7 @@ package main
 import (
 	"Jahresarbeitwebsite/internal/models"
 	"Jahresarbeitwebsite/internal/validator"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -11,9 +12,17 @@ import (
 )
 
 type UpdateCreateForm struct {
-	Title string `form:"title"`
-	Body  string `form:"body"`
-	validator.Validator
+	Title               string `form:"title"`
+	Body                string `form:"body"`
+	validator.Validator `form:"-"`
+}
+
+type UpdateUpdateForm struct {
+	Title               string `form:"title"`
+	Body                string `form:"body"`
+	ID                  int    `form:"id"`
+	Version             int    `form:"version"`
+	validator.Validator `form:"-"`
 }
 
 func (app *application) updateView(w http.ResponseWriter, r *http.Request) {
@@ -45,14 +54,12 @@ func (app *application) updateCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) updateCreatePost(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
+
+	var form UpdateCreateForm
+	err := app.decodePostForm(r, &form)
 	if err != nil {
 		app.clientError(w, r, http.StatusBadRequest)
 		return
-	}
-	form := UpdateCreateForm{
-		Title: r.FormValue("title"),
-		Body:  r.FormValue("body"),
 	}
 
 	form.CheckFieldErrors(validator.NotBlank(form.Title), "title", "This field is required.")
@@ -66,10 +73,12 @@ func (app *application) updateCreatePost(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	userID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
+
 	update := &models.Update{
 		Title:  form.Title,
 		Body:   form.Body,
-		UserID: 15, // TODO: implement user
+		UserID: userID,
 	}
 
 	id, err := app.models.Update.Insert(update.UserID, update.Title, update.Body)
@@ -81,7 +90,7 @@ func (app *application) updateCreatePost(w http.ResponseWriter, r *http.Request)
 	app.logger.Info("update created", "id", id)
 }
 
-func (app *application) updates(w http.ResponseWriter, r *http.Request) {
+func (app *application) updateList(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 	var input struct {
 		models.Filters
@@ -103,4 +112,63 @@ func (app *application) updates(w http.ResponseWriter, r *http.Request) {
 	}
 	data.Updates = updates
 	app.render(w, r, http.StatusOK, "updates.gohtml", data)
+}
+
+func (app *application) updateUpdate(w http.ResponseWriter, r *http.Request) {
+	data := app.newTemplateData(r)
+	params := httprouter.ParamsFromContext(r.Context())
+	id, err := strconv.Atoi(params.ByName("id"))
+	if err != nil || id < 1 {
+		app.serverError(w, r, fmt.Errorf("invalid update id: %s", params.ByName("id")))
+		return
+	}
+	update, err := app.models.Update.GetByID(id)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+	data.Update = update
+	data.Form = UpdateUpdateForm{
+		Title: "",
+	}
+	app.render(w, r, http.StatusOK, "updateupdate.gohtml", data)
+}
+
+func (app *application) updateUpdatePost(w http.ResponseWriter, r *http.Request) {
+	params := httprouter.ParamsFromContext(r.Context())
+	id, err := strconv.Atoi(params.ByName("id"))
+	if err != nil || id < 1 {
+		app.serverError(w, r, fmt.Errorf("invalid update id: %s", params.ByName("id")))
+		return
+	}
+
+	var form UpdateUpdateForm
+	err = app.decodePostForm(r, &form)
+	if err != nil {
+		app.clientError(w, r, http.StatusBadRequest)
+		return
+	}
+
+	form.CheckFieldErrors(validator.NotBlank(form.Title), "title", "This field is required.")
+	form.CheckFieldErrors(validator.MaxChars(form.Title, 255), "title", fmt.Sprintf("Must be at most %d characters long.", 255))
+	form.CheckFieldErrors(validator.NotBlank(form.Body), "body", "This field is required.")
+	form.CheckFieldErrors(validator.MaxChars(form.Body, 10000), "body", fmt.Sprintf("Must be at most %d characters long.", 10000))
+	if !form.Valid() {
+		data := app.newTemplateData(r)
+		data.Form = form
+		app.render(w, r, http.StatusUnprocessableEntity, "updatecreate.gohtml", data)
+		return
+	}
+
+	err = app.models.Update.Update(id, form.Title, form.Body, form.Version)
+	if err != nil {
+		if errors.Is(err, models.ErrEditConflict) {
+			app.sessionManager.Put(r.Context(), "flash", "Tried to edit an outdated version of the update. Please try again.")
+			app.logger.Info("update edit conflict", "id", id, "version", form.Version)
+			http.Redirect(w, r, "/update/view/"+strconv.Itoa(id), http.StatusSeeOther)
+			return
+		}
+		app.serverError(w, r, err)
+	}
+	http.Redirect(w, r, "/update/view/"+strconv.Itoa(id), http.StatusSeeOther)
 }

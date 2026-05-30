@@ -1,0 +1,44 @@
+{{define "title"}}Create Shop Entry{{end}}
+{{define "main"}}
+    <form action="/shop/create" method="post">
+        <div>
+            <label for="title">Title</label>
+            {{with .Form.Validator.FieldErrors.title}}
+                <label class="error">{{.}}</label>
+            {{end}}
+            <input type="text" name="title" id="title" />
+        </div>
+        <div>
+            <label for="description">Description</label>
+            {{with .Form.Validator.FieldErrors.description}}
+                <label class="error">{{.}}</label>
+            {{end}}
+            <textarea name="description" id="description" cols="90" minlength="50" maxlength="2000" ></textarea>
+        </div>
+        <div>
+            <p>Images will come later</p>
+        </div>
+        <div>
+            <label for="price">Price</label>
+            {{with .Form.Validator.FieldErrors.price}}
+                <label class="error">{{.}}</label>
+            {{end}}
+            <input type="number" name="price" id="price" />
+        </div>
+        <div>
+            <label for="quantity">Initial Quantity</label>
+            {{with .Form.Validator.FieldErrors.quantity}}
+                <label class="error">{{.}}</label>
+            {{end}}
+            <input type="number" name="quantity" id="quantity"/>
+        </div>
+        <div>
+            <label for="categories">Categories</label>
+            {{with .Form.Validator.FieldErrors.categories}}
+                <label class="error">{{.}}</label>
+            {{end}}
+            <input type="text" name="categories" id="categories"/>
+        </div>
+        <button type="submit">Create</button>
+    </form>
+{{end}}

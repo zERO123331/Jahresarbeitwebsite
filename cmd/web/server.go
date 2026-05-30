@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -12,6 +13,10 @@ import (
 )
 
 func (app *application) serve() error {
+	tlsConfig := &tls.Config{
+		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
+	}
+
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", app.config.port),
 		Handler:      app.routes(),
@@ -19,6 +24,7 @@ func (app *application) serve() error {
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		ErrorLog:     slog.NewLogLogger(app.logger.Handler(), slog.LevelError),
+		TLSConfig:    tlsConfig,
 	}
 
 	shutdownError := make(chan error)
@@ -36,7 +42,7 @@ func (app *application) serve() error {
 
 	app.logger.Info("starting server", "port", srv.Addr, "env", app.config.env)
 
-	err := srv.ListenAndServe()
+	err := srv.ListenAndServeTLS("./tls/cert.pem", "./tls/key.pem")
 	if !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}

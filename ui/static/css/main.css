@@ -1,6 +1,135 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wdth,wght@0,75..100,100..900;1,75..100,100..900&display=swap');
+
+:root {
+    --background-color: #111;
+    --card-color: #222;
+    --border-color: #333;
+    --border-color-hover: #444;
+    --text-color: white;
+}
 body {
-    background: #111;
-    color: white;
+    background: var(--background-color);
+    color: var(--text-color);
+}
+
+
+
+textarea {
+    display: block;
+    padding: 10px;
+
+    margin: 10px 0 0 -10px;
+    width: 90%;
+    height: 90%;
+
+
+    border-right: 1px solid;
+
+    overflow: auto;
+
+}
+
+.shop-list {
+    display: inline-block;
+    margin: 8px;
+    max-width: 100%;
+}
+
+
+.shop-entry {
+    display: inline-block;
+    margin: 8px;
+    max-width: 300px;
+    position: relative;
+    align-items: center;
+    text-align: left;
+    transition: all 0.3s 0s ease;
+    background: var(--card-color);
+    border: 2px solid var(--border-color);
+    border-radius: 35px;
+    padding: 10px;
+    line-height: 0.3;
+    font-family: 'Roboto', sans-serif;
+    overflow: hidden;
+}
+
+.shop-entry-info-title {
+    font-size: 2em;
+    font-weight: bold;
+}
+
+.shop-entry-info-price {
+    font-size: 1.5em;
+    font-weight: 300;
+}
+
+.shop-entry-images {
+    align-items: center;
+    justify-content: center;
+    display: inline;
+}
+
+.shop-entry-image {
+    justify-content: center;
+    display: inline;
+    justify-self: center;
+    align-self: center;
+    border-radius: 25px;
+    overflow: hidden;
+    max-width: 100%;
+}
+
+.shop-entry-image > img {
+    border-radius: 25px;
+}
+
+.shop-entry:hover {
+    transform: scale(1.01);
+    border: 2px solid var(--border-color-hover);
+}
+
+img {
+    max-width: 300px;
+}
+
+img::marker {
+    visibility: hidden;
+    content: "";
+}
+
+li::marker {
+    visibility: hidden;
+    content: "";
+}
+
+li {
+    justify-content: center;
+    display: inline;
+    align-self: center;
+}
+
+ol {
+    display: inline;
+    align-self: center;
+    justify-content: center;
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+}
+
+.shop-entry > img {
+    width: 90%;
+    align-self: center;
+    height: auto;
+}
+
+textarea:invalid {
+    border: 2px dashed red;
+}
+
+textarea:valid {
+    border: 2px solid lime;
 }
 
 .navbar {
