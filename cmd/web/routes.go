@@ -14,7 +14,7 @@ func (app *application) routes() http.Handler {
 	router.NotFound = http.HandlerFunc(app.notFoundResponse)
 	router.MethodNotAllowed = http.HandlerFunc(app.methodNotAllowedResponse)
 
-	dynamic := alice.New()
+	dynamic := alice.New(preventCSRF, app.authenticate)
 	protected := dynamic.Append(app.requireAuthentication)
 
 	router.ServeFiles("/static/*filepath", http.Dir("./ui/static"))

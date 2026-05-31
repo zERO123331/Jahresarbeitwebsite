@@ -10,6 +10,7 @@
             <a href="/update/create">Create Update</a>
             <a href="/shop/create">Create Shop Entry</a>
             <form action="/user/logout" method="post">
+                <input type='hidden' name='csrf_token' value='{{.CSRFToken}}'>
                 <button>Logout</button>
             </form>
         {{else}}

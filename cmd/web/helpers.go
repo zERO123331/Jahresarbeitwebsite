@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/go-playground/form/v4"
+	"github.com/justinas/nosurf"
 )
 
 func (app *application) serverError(w http.ResponseWriter, r *http.Request, err error) {
@@ -56,6 +57,7 @@ func (app *application) newTemplateData(r *http.Request) templateData {
 	return templateData{
 		Flash:           app.sessionManager.PopString(r.Context(), "flash"),
 		IsAuthenticated: app.isAuthenticated(r),
+		CSRFToken:       nosurf.Token(r),
 	}
 }
 
@@ -89,7 +91,11 @@ func (app *application) readInt(qs url.Values, key string, defaultValue int, v *
 }
 
 func (app *application) isAuthenticated(r *http.Request) bool {
-	return app.sessionManager.Get(r.Context(), "authenticatedUserID") != nil
+	isAuthenticated, ok := r.Context().Value(isAuthenticatedContextKey).(bool)
+	if !ok {
+		return false
+	}
+	return isAuthenticated
 }
 
 func (app *application) decodePostForm(r *http.Request, dst any) error {

@@ -1,6 +1,7 @@
 {{define "title"}}Create Shop Entry{{end}}
 {{define "main"}}
     <form action="/shop/create" method="post">
+        <input type='hidden' name='csrf_token' value='{{.CSRFToken}}'>
         <div>
             <label for="title">Title</label>
             {{with .Form.Validator.FieldErrors.title}}

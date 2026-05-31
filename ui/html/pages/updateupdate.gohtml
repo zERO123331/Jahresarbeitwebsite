@@ -1,6 +1,7 @@
 {{define "title"}}Edit Update{{end}}
 {{define "main"}}
     <form action="/update/edit/{{.Update.ID}}" method="post">
+        <input type='hidden' name='csrf_token' value='{{.CSRFToken}}'>
         <div>
             <label for="title">Title</label>
             {{with .Form.Validator.FieldErrors.title}}

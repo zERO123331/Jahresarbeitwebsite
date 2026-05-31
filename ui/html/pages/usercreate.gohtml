@@ -1,6 +1,7 @@
 {{define "title"}}Create User{{end}}
 {{define "main"}}
     <form action="/user/create" method="POST">
+        <input type='hidden' name='csrf_token' value='{{.CSRFToken}}'>
         <div>
             <label>Username</label>
             {{with .Form.Validator.FieldErrors.username}}

@@ -174,3 +174,12 @@ func (m *UserModel) Activate(id int) error {
 	_, err := m.DB.ExecContext(ctx, stmt, id)
 	return err
 }
+
+func (m *UserModel) Exists(id int) (bool, error) {
+	stmt := `SELECT EXISTS (SELECT true FROM users WHERE id = $1)`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	var exists bool
+	err := m.DB.QueryRowContext(ctx, stmt, id).Scan(&exists)
+	return exists, err
+}

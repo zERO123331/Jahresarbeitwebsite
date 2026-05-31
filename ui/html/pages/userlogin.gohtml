@@ -1,6 +1,7 @@
 {{define "title"}}Login{{end}}
 {{define "main"}}
-    <form action="/user/login" method="post" novalidate>
+    <form action="/user/login" method="post">
+        <input type='hidden' name='csrf_token' value='{{.CSRFToken}}'>
         <div>
             <label>Email</label>
             {{with .Form.FieldErrors.email}}
