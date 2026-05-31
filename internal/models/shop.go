@@ -41,7 +41,7 @@ func (m *ShopModel) Insert(title, description string, price, quantity int, image
 }
 
 func (m *ShopModel) Buy(id, quantity int) (int, error) {
-	stmt := `UPDATE shopentry SET quantity = quantity - $1 WHERE id = $2 RETURNING quantity`
+	stmt := `UPDATE shopentry SET quantity = quantity - $1 WHERE id = $2 AND $1 <= quantity RETURNING quantity`
 	args := []any{quantity, id}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)

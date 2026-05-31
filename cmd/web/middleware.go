@@ -107,21 +107,26 @@ func (app *application) recoverPanic(next http.Handler) http.Handler {
 
 func (app *application) authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Vary", "Authorization")
+
 		id := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
 		if id == 0 {
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		exists, err := app.models.User.Exists(id)
+		user, err := app.models.User.GetByID(id)
 		if err != nil {
 			app.serverError(w, r, err)
 			return
 		}
-		if !exists {
-			ctx := context.WithValue(r.Context(), isAuthenticatedContextKey, true)
-			r.WithContext(ctx)
+		if !user.Activated {
+			next.ServeHTTP(w, r)
+			return
 		}
+		r = app.contextSetUser(r, user)
+		ctx := context.WithValue(r.Context(), isAuthenticatedContextKey, true)
+		r = r.WithContext(ctx)
 
 		next.ServeHTTP(w, r)
 	})
@@ -137,6 +142,26 @@ func (app *application) requireAuthentication(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func (app *application) requirePermission(code string, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user := app.contextGetUser(r)
+
+		permissions, err := app.models.Permissions.GetAllForUser(user.ID)
+		if err != nil {
+			app.serverError(w, r, err)
+			return
+		}
+
+		if !permissions.Includes(code) && !permissions.Includes("admin") {
+			app.logger.Info("permission denied", "user", user.ID, "permission", code)
+			app.stylizedClientError(w, r, http.StatusForbidden, "You don't have the necessary permissions to do that.")
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	}
 }
 
 func preventCSRF(next http.Handler) http.Handler {

@@ -12,6 +12,7 @@ type templateData struct {
 	User            *models.User
 	ShopEntries     []*models.ShopEntry
 	ShopEntry       *models.ShopEntry
+	Error           ErrorPageData
 	Form            any
 	Flash           string
 	IsAuthenticated bool

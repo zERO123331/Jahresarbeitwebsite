@@ -6,7 +6,7 @@
         <a href="/shop">Shop</a>
         </div>
         <div class="right">
-        {{with .IsAuthenticated}}
+        {{if .IsAuthenticated}}
             <a href="/update/create">Create Update</a>
             <a href="/shop/create">Create Shop Entry</a>
             <form action="/user/logout" method="post">

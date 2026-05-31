@@ -2,13 +2,14 @@ package main
 
 import (
 	"Jahresarbeitwebsite/internal/models"
+	"Jahresarbeitwebsite/internal/permissions"
 	"Jahresarbeitwebsite/internal/validator"
 	"errors"
 	"fmt"
 	"net/http"
 )
 
-type UserCreateForm struct {
+type userCreateForm struct {
 	Name                string `form:"username"`
 	Email               string `form:"email"`
 	Password            string `form:"password"`
@@ -24,7 +25,7 @@ type userLoginForm struct {
 
 func (app *application) userCreate(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
-	data.Form = UserCreateForm{
+	data.Form = userCreateForm{
 		Name: "",
 	}
 	app.render(w, r, http.StatusOK, "usercreate.gohtml", data)
@@ -32,16 +33,16 @@ func (app *application) userCreate(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) userCreatePost(w http.ResponseWriter, r *http.Request) {
 
-	var form UserCreateForm
+	var form userCreateForm
 	err := app.decodePostForm(r, &form)
 	if err != nil {
-		app.clientError(w, r, http.StatusBadRequest)
+		app.basicClientError(w, r, http.StatusBadRequest)
 		return
 	}
 
 	form.CheckFieldErrors(validator.MinChars(form.Name, 3), "username", fmt.Sprintf("Must be at least %d characters long.", 3))
 	form.CheckFieldErrors(validator.NotBlank(form.Name), "username", "This field is required.")
-	form.CheckFieldErrors(validator.MaxChars(form.Name, 25), "username", fmt.Sprintf("Must be at most %d characters long.", 255))
+	form.CheckFieldErrors(validator.MaxChars(form.Name, 25), "username", fmt.Sprintf("Must be at most %d characters long.", 25))
 	form.CheckFieldErrors(validator.Matches(form.Name, validator.UserNameRX), "username", "Must be a valid username")
 	form.CheckFieldErrors(validator.NotBlank(form.Email), "email", "This field is required.")
 	form.CheckFieldErrors(validator.MaxChars(form.Email, 255), "email", fmt.Sprintf("Must be at most %d characters long.", 255))
@@ -55,10 +56,7 @@ func (app *application) userCreatePost(w http.ResponseWriter, r *http.Request) {
 	// TODO: fix CSS for error messages
 
 	if !form.Valid() {
-		data := app.newTemplateData(r)
-		data.Form = form
-		app.logger.Error("invalid user create form", "errors", form.FieldErrors)
-		app.render(w, r, http.StatusUnprocessableEntity, "usercreate.gohtml", data)
+		app.failedValidationResponse(w, r, "usercreate.gohtml", form)
 		return
 	}
 
@@ -71,11 +69,25 @@ func (app *application) userCreatePost(w http.ResponseWriter, r *http.Request) {
 
 	id, err := app.models.User.Insert(user)
 	if err != nil {
-		app.clientError(w, r, http.StatusBadRequest)
+		if errors.Is(err, models.ErrDuplicateEmail) {
+			data := app.newTemplateData(r)
+			form.AddNonFieldError("Email address is already in use.")
+			data.Form = form
+			app.render(w, r, http.StatusUnprocessableEntity, "usercreate.gohtml", data)
+			return
+		}
+		app.basicClientError(w, r, http.StatusBadRequest)
 		app.logger.Error("failed to create user", "error", err.Error())
 		return
 	}
-	http.Redirect(w, r, "/user/Verify/", http.StatusSeeOther)
+
+	err = app.models.Permissions.AddForUser(id, permissions.UpdatesRead, permissions.ShopRead, permissions.ShopWrite)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	http.Redirect(w, r, "/user/login", http.StatusSeeOther)
 	app.logger.Info("user created", "id", id)
 }
 
@@ -90,7 +102,7 @@ func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
 	var form userLoginForm
 	err := app.decodePostForm(r, &form)
 	if err != nil {
-		app.clientError(w, r, http.StatusBadRequest)
+		app.basicClientError(w, r, http.StatusBadRequest)
 		return
 	}
 
@@ -102,10 +114,7 @@ func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
 	form.CheckFieldErrors(validator.MaxChars(form.Password, 72), "password", fmt.Sprintf("Must be at most %d characters long.", 72))
 
 	if !form.Valid() {
-		data := app.newTemplateData(r)
-		data.Form = form
-		app.logger.Error("invalid user login form", "errors", form.FieldErrors)
-		app.render(w, r, http.StatusUnprocessableEntity, "userlogin.gohtml", data)
+		app.failedValidationResponse(w, r, "userlogin.gohtml", form)
 		return
 	}
 
@@ -137,6 +146,8 @@ func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	app.sessionManager.Put(r.Context(), "authenticatedUserID", id)
+	app.sessionManager.Put(r.Context(), "flash", "You've been logged in.")
+	app.logger.Info("user logged in", "id", id)
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 
 }

@@ -3,6 +3,8 @@ package main
 import (
 	"Jahresarbeitwebsite/internal/models"
 	"Jahresarbeitwebsite/internal/validator"
+	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -11,7 +13,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-type ShopEntryCreateForm struct {
+type shopEntryCreateForm struct {
 	Title               string `form:"title"`
 	Description         string `form:"description"`
 	Price               int    `form:"price"`
@@ -39,10 +41,11 @@ func (app *application) shopPage(w http.ResponseWriter, r *http.Request) {
 	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
 
 	input.Filters.Sort = app.readString(qs, "sort", "id")
-	input.Filters.SortSafelist = []string{"id", "title", "price", "quantity"}
+	input.Filters.SortSafelist = []string{"id", "title", "price", "quantity", "-id", "-title", "-price", "-quantity"}
 
 	if models.ValidateFilters(v, input.Filters); !v.Valid() {
-		app.failedValidationResponse(w, r, v.FilterErrors)
+		app.failedValidationResponse(w, r, "shop.gohtml", input)
+		return
 	}
 	entries, err := app.models.Shop.GetAll(input.Title, input.Categories, input.Filters)
 	if err != nil {
@@ -60,11 +63,15 @@ func (app *application) shopEntry(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(params.ByName("id"))
 
 	if err != nil || id < 1 {
-		app.serverError(w, r, fmt.Errorf("invalid shop entry id: %s", r.PathValue("id")))
+		app.stylizedClientError(w, r, http.StatusBadRequest, fmt.Sprintf("invalid shop entry id: %s", r.PathValue("id")))
 		return
 	}
 	entry, err := app.models.Shop.GetByID(id)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			app.stylizedClientError(w, r, http.StatusNotFound, "shop entry not found")
+			return
+		}
 		app.serverError(w, r, err)
 		return
 	}
@@ -74,17 +81,17 @@ func (app *application) shopEntry(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) shopEntryCreate(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
-	data.Form = ShopEntryCreateForm{
+	data.Form = shopEntryCreateForm{
 		Title: "",
 	}
 	app.render(w, r, http.StatusOK, "shopEntryCreate.gohtml", data)
 }
 
 func (app *application) shopEntryCreatePost(w http.ResponseWriter, r *http.Request) {
-	var form ShopEntryCreateForm
+	var form shopEntryCreateForm
 	err := app.decodePostForm(r, &form)
 	if err != nil {
-		app.clientError(w, r, http.StatusBadRequest)
+		app.basicClientError(w, r, http.StatusBadRequest)
 		return
 	}
 
@@ -109,17 +116,15 @@ func (app *application) shopEntryCreatePost(w http.ResponseWriter, r *http.Reque
 	// images will come later but at this point idk how to effectively handle them, without storing local files or using a separate CDN
 
 	if !form.Valid() {
-		data := app.newTemplateData(r)
-		data.Form = form
-		app.render(w, r, http.StatusUnprocessableEntity, "shopEntryCreate.gohtml", data)
+		app.failedValidationResponse(w, r, "shopEntryCreate.gohtml", form)
 		return
 	}
 
-	UserID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
+	userID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
 
 	imageURLs := []string{"/static/img/placeholder.svg"}
 
-	entryID, err := app.models.Shop.Insert(form.Title, form.Description, form.Price, form.Quantity, imageURLs, categories, UserID)
+	entryID, err := app.models.Shop.Insert(form.Title, form.Description, form.Price, form.Quantity, imageURLs, categories, userID)
 	if err != nil {
 		app.serverError(w, r, err)
 		return

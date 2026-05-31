@@ -8,7 +8,6 @@ import (
 	"image"
 	"net/http"
 	"net/url"
-	"runtime/debug"
 	"strconv"
 	"strings"
 
@@ -27,12 +26,22 @@ func (app *application) serverError(w http.ResponseWriter, r *http.Request, err 
 }
 
 func (app *application) fallbackServerError(w http.ResponseWriter, r *http.Request, err error) {
-	app.logger.Error("Fallback Server Error", "error", err.Error(), "method", r.Method, "uri", r.URL.RequestURI(), "remote_addr", r.RemoteAddr, "trace", debug.Stack())
+	app.logger.Error("Fallback Server Error", "error", err.Error())
 	http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 }
 
-func (app *application) clientError(w http.ResponseWriter, r *http.Request, status int) {
+func (app *application) basicClientError(w http.ResponseWriter, r *http.Request, status int) {
 	http.Error(w, http.StatusText(status), status)
+}
+
+func (app *application) stylizedClientError(w http.ResponseWriter, r *http.Request, status int, message string) {
+	data := app.newTemplateData(r)
+	data.Error = ErrorPageData{
+		ErrorID: status,
+		Error:   message,
+	}
+
+	app.render(w, r, status, "error.gohtml", data)
 }
 
 func (app *application) render(w http.ResponseWriter, r *http.Request, status int, page string, data templateData) {
@@ -48,9 +57,12 @@ func (app *application) render(w http.ResponseWriter, r *http.Request, status in
 	err := ts.ExecuteTemplate(buf, "base", data)
 	if err != nil {
 		app.fallbackServerError(w, r, err)
+		return
 	}
 	w.WriteHeader(status)
-	buf.WriteTo(w)
+	if _, err = buf.WriteTo(w); err != nil {
+		app.logger.Error("failed to write response", "error", err.Error())
+	}
 }
 
 func (app *application) newTemplateData(r *http.Request) templateData {

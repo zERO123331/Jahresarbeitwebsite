@@ -3,6 +3,7 @@ package main
 import (
 	"Jahresarbeitwebsite/internal/models"
 	"Jahresarbeitwebsite/internal/validator"
+	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
@@ -11,13 +12,13 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-type UpdateCreateForm struct {
+type updateCreateForm struct {
 	Title               string `form:"title"`
 	Body                string `form:"body"`
 	validator.Validator `form:"-"`
 }
 
-type UpdateUpdateForm struct {
+type updateUpdateForm struct {
 	Title               string `form:"title"`
 	Body                string `form:"body"`
 	ID                  int    `form:"id"`
@@ -30,11 +31,15 @@ func (app *application) updateView(w http.ResponseWriter, r *http.Request) {
 	params := httprouter.ParamsFromContext(r.Context())
 	id, err := strconv.Atoi(params.ByName("id"))
 	if err != nil || id < 1 {
-		app.serverError(w, r, fmt.Errorf("invalid update id: %s", params.ByName("id")))
+		app.stylizedClientError(w, r, http.StatusBadRequest, fmt.Sprintf("invalid update id: %s", params.ByName("id")))
 		return
 	}
 	update, err := app.models.Update.GetByID(id)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			app.stylizedClientError(w, r, http.StatusNotFound, "update not found")
+			return
+		}
 		app.serverError(w, r, err)
 		return
 	}
@@ -46,7 +51,7 @@ func (app *application) updateView(w http.ResponseWriter, r *http.Request) {
 // TODO: sometimes a server error occurs when transfering to this page
 func (app *application) updateCreate(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
-	data.Form = UpdateCreateForm{
+	data.Form = updateCreateForm{
 		Title: "",
 		Body:  "",
 	}
@@ -55,10 +60,10 @@ func (app *application) updateCreate(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) updateCreatePost(w http.ResponseWriter, r *http.Request) {
 
-	var form UpdateCreateForm
+	var form updateCreateForm
 	err := app.decodePostForm(r, &form)
 	if err != nil {
-		app.clientError(w, r, http.StatusBadRequest)
+		app.basicClientError(w, r, http.StatusBadRequest)
 		return
 	}
 
@@ -67,9 +72,7 @@ func (app *application) updateCreatePost(w http.ResponseWriter, r *http.Request)
 	form.CheckFieldErrors(validator.NotBlank(form.Body), "body", "This field is required.")
 	form.CheckFieldErrors(validator.MaxChars(form.Body, 10000), "body", fmt.Sprintf("Must be at most %d characters long.", 10000))
 	if !form.Valid() {
-		data := app.newTemplateData(r)
-		data.Form = form
-		app.render(w, r, http.StatusUnprocessableEntity, "updatecreate.gohtml", data)
+		app.failedValidationResponse(w, r, "updatecreate.gohtml", form)
 		return
 	}
 
@@ -102,8 +105,13 @@ func (app *application) updateList(w http.ResponseWriter, r *http.Request) {
 	input.Filters.Page = app.readInt(qs, "page", 1, v)
 	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
 	input.Filters.Sort = app.readString(qs, "sort", "id")
-	input.Filters.SortSafelist = []string{"id", "title", "updated_at"}
+	input.Filters.SortSafelist = []string{"id", "title", "updated_at", "-id", "-title", "-updated_at"}
 	models.ValidateFilters(v, input.Filters)
+
+	if !v.Valid() {
+		app.failedValidationResponse(w, r, "updates.gohtml", input)
+		return
+	}
 
 	updates, err := app.models.Update.GetAll("", input.Filters)
 	if err != nil {
@@ -128,7 +136,7 @@ func (app *application) updateUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data.Update = update
-	data.Form = UpdateUpdateForm{
+	data.Form = updateUpdateForm{
 		Title: "",
 	}
 	app.render(w, r, http.StatusOK, "updateupdate.gohtml", data)
@@ -142,10 +150,10 @@ func (app *application) updateUpdatePost(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	var form UpdateUpdateForm
+	var form updateUpdateForm
 	err = app.decodePostForm(r, &form)
 	if err != nil {
-		app.clientError(w, r, http.StatusBadRequest)
+		app.stylizedClientError(w, r, http.StatusBadRequest, "invalid form")
 		return
 	}
 
@@ -154,9 +162,7 @@ func (app *application) updateUpdatePost(w http.ResponseWriter, r *http.Request)
 	form.CheckFieldErrors(validator.NotBlank(form.Body), "body", "This field is required.")
 	form.CheckFieldErrors(validator.MaxChars(form.Body, 10000), "body", fmt.Sprintf("Must be at most %d characters long.", 10000))
 	if !form.Valid() {
-		data := app.newTemplateData(r)
-		data.Form = form
-		app.render(w, r, http.StatusUnprocessableEntity, "updatecreate.gohtml", data)
+		app.failedValidationResponse(w, r, "updateupdate.gohtml", form)
 		return
 	}
 
@@ -169,6 +175,7 @@ func (app *application) updateUpdatePost(w http.ResponseWriter, r *http.Request)
 			return
 		}
 		app.serverError(w, r, err)
+		return
 	}
 	http.Redirect(w, r, "/update/view/"+strconv.Itoa(id), http.StatusSeeOther)
 }

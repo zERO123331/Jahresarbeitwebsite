@@ -55,7 +55,8 @@ type UserModel struct {
 }
 
 func (m *UserModel) Insert(user *User) (int, error) {
-	stmt := `INSERT INTO users (name, email, password_hash, activated) VALUES ($1, $2, $3, false) RETURNING id, created_at, version`
+	// TODO: implement activation email and change this to false after that
+	stmt := `INSERT INTO users (name, email, password_hash, activated) VALUES ($1, $2, $3, true) RETURNING id, created_at, version`
 
 	args := []any{user.Name, user.Email, string(user.Password.hash)}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -182,4 +183,16 @@ func (m *UserModel) Exists(id int) (bool, error) {
 	var exists bool
 	err := m.DB.QueryRowContext(ctx, stmt, id).Scan(&exists)
 	return exists, err
+}
+
+func (m *UserModel) GetByID(id int) (*User, error) {
+	stmt := `SELECT id, created_at, name, email, activated, version FROM users WHERE id = $1`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	user := &User{}
+	err := m.DB.QueryRowContext(ctx, stmt, id).Scan(&user.ID, &user.CreatedAt, &user.Name, &user.Email, &user.Activated, &user.Version)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
 }
