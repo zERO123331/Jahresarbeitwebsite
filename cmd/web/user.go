@@ -36,7 +36,7 @@ func (app *application) userCreatePost(w http.ResponseWriter, r *http.Request) {
 	var form userCreateForm
 	err := app.decodePostForm(r, &form)
 	if err != nil {
-		app.basicClientError(w, r, http.StatusBadRequest)
+		app.stylizedClientError(w, r, http.StatusBadRequest, "invalid form")
 		return
 	}
 
@@ -70,13 +70,11 @@ func (app *application) userCreatePost(w http.ResponseWriter, r *http.Request) {
 	id, err := app.models.User.Insert(user)
 	if err != nil {
 		if errors.Is(err, models.ErrDuplicateEmail) {
-			data := app.newTemplateData(r)
 			form.AddNonFieldError("Email address is already in use.")
-			data.Form = form
-			app.render(w, r, http.StatusUnprocessableEntity, "usercreate.gohtml", data)
+			app.failedValidationResponse(w, r, "usercreate.gohtml", form)
 			return
 		}
-		app.basicClientError(w, r, http.StatusBadRequest)
+		app.serverError(w, r, err)
 		app.logger.Error("failed to create user", "error", err.Error())
 		return
 	}
@@ -123,16 +121,10 @@ func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, models.ErrInvalidCredentials):
 			form.AddNonFieldError("Email or password is incorrect.")
-
-			data := app.newTemplateData(r)
-			data.Form = form
-			app.render(w, r, http.StatusUnprocessableEntity, "userlogin.gohtml", data)
+			app.failedValidationResponse(w, r, "userlogin.gohtml", form)
 		case errors.Is(err, models.ErrUserNotActivated):
 			form.AddNonFieldError("Your account has not been activated yet. Please check your email for the activation link.")
-
-			data := app.newTemplateData(r)
-			data.Form = form
-			app.render(w, r, http.StatusUnprocessableEntity, "userlogin.gohtml", data)
+			app.failedValidationResponse(w, r, "userlogin.gohtml", form)
 		default:
 			app.serverError(w, r, err)
 		}

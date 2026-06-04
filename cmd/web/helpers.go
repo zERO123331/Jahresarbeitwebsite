@@ -6,12 +6,15 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	"mime/multipart"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/go-playground/form/v4"
+	"github.com/google/uuid"
 	"github.com/justinas/nosurf"
 )
 
@@ -143,4 +146,35 @@ func (app *application) getFormImage(r *http.Request) (image.Image, error) {
 		return nil, err
 	}
 	return img, nil
+}
+
+func (app *application) uploadImages(r *http.Request, fileHeaders []*multipart.FileHeader, userID int) ([]string, error) {
+	imageURLS := make([]string, 0, len(fileHeaders))
+	for _, fileHeader := range fileHeaders {
+		file, err := fileHeader.Open()
+		if err != nil {
+			return imageURLS, err
+		}
+		defer file.Close()
+
+		contentType := fileHeader.Header.Get("Content-Type")
+		extension := filepath.Ext(fileHeader.Filename)
+		objectKey := fmt.Sprintf("shop/%d/%s%s", userID, uuid.NewString(), extension)
+		imageURL, err := app.cdn.Upload(r.Context(), file, fileHeader.Size, objectKey, contentType)
+		if err != nil {
+			return imageURLS, err
+		}
+		imageURLS = append(imageURLS, imageURL)
+	}
+	return imageURLS, nil
+}
+
+func (app *application) deleteImages(r *http.Request, imageUrls []string) error {
+	for _, imageUrl := range imageUrls {
+		err := app.cdn.Delete(r.Context(), imageUrl)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

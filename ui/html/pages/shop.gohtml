@@ -13,6 +13,8 @@
     <div class="shop-list">
     {{range .ShopEntries}}
         <div class="shop-entry">
+            <a href="/shop/view/{{.ID}}" class="shop-entry-link">
+
             <ol class="shop-entry-images">
                 {{range .ImageURLS}}
                 <li class="shop-entry-image">
@@ -25,6 +27,7 @@
                 <h2 class="shop-entry-info-title">{{.Title}}</h2>
                 <h3 class="shop-entry-info-price">{{.Price}} coin</h3>
             </div>
+            </a>
         </div>
     {{end}}
     </div>

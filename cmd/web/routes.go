@@ -19,6 +19,7 @@ func (app *application) routes() http.Handler {
 	protected := dynamic.Append(app.requireAuthentication)
 
 	router.ServeFiles("/static/*filepath", http.Dir("./ui/static"))
+	router.Handler(http.MethodGet, "/images/*filepath", dynamic.ThenFunc(app.reverseProxy.ServeHTTP))
 
 	router.Handler(http.MethodGet, "/", dynamic.ThenFunc(app.home))
 

@@ -14,6 +14,7 @@ type templateData struct {
 	ShopEntry       *models.ShopEntry
 	Error           ErrorPageData
 	Form            any
+	Filters         models.Filters
 	Flash           string
 	IsAuthenticated bool
 	CSRFToken       string

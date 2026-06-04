@@ -1,6 +1,6 @@
 {{define "title"}}Create Shop Entry{{end}}
 {{define "main"}}
-    <form action="/shop/create" method="post">
+    <form action="/shop/create" method="post" enctype="multipart/form-data">
         <input type='hidden' name='csrf_token' value='{{.CSRFToken}}'>
         <div>
             <label for="title">Title</label>
@@ -17,7 +17,11 @@
             <textarea name="description" id="description" cols="90" minlength="50" maxlength="2000" ></textarea>
         </div>
         <div>
-            <p>Images will come later</p>
+            <label for="image">Images</label>
+            {{with .Form.Validator.FieldErrors.images}}
+                <label class="error">{{.}}</label>
+            {{end}}
+            <input type="file" name="images" id="images" accept="image/*" multiple/>
         </div>
         <div>
             <label for="price">Price</label>
@@ -40,6 +44,7 @@
             {{end}}
             <input type="text" name="categories" id="categories"/>
         </div>
+
         <button type="submit">Create</button>
     </form>
 {{end}}

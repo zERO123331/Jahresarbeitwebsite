@@ -94,3 +94,12 @@ func Unique[T comparable](values []T) bool {
 
 	return len(uniqueValues) == len(values)
 }
+
+func PartEmpty(values []string) bool {
+	for _, value := range values {
+		if value == "" {
+			return false
+		}
+	}
+	return true
+}

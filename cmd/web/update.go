@@ -31,13 +31,13 @@ func (app *application) updateView(w http.ResponseWriter, r *http.Request) {
 	params := httprouter.ParamsFromContext(r.Context())
 	id, err := strconv.Atoi(params.ByName("id"))
 	if err != nil || id < 1 {
-		app.stylizedClientError(w, r, http.StatusBadRequest, fmt.Sprintf("invalid update id: %s", params.ByName("id")))
+		app.badRequestResponse(w, r)
 		return
 	}
 	update, err := app.models.Update.GetByID(id)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			app.stylizedClientError(w, r, http.StatusNotFound, "update not found")
+		if errors.Is(err, models.ErrNoRecord) {
+			app.notFoundResponse(w, r)
 			return
 		}
 		app.serverError(w, r, err)
@@ -63,7 +63,7 @@ func (app *application) updateCreatePost(w http.ResponseWriter, r *http.Request)
 	var form updateCreateForm
 	err := app.decodePostForm(r, &form)
 	if err != nil {
-		app.basicClientError(w, r, http.StatusBadRequest)
+		app.stylizedClientError(w, r, http.StatusBadRequest, "invalid form")
 		return
 	}
 
@@ -127,11 +127,15 @@ func (app *application) updateUpdate(w http.ResponseWriter, r *http.Request) {
 	params := httprouter.ParamsFromContext(r.Context())
 	id, err := strconv.Atoi(params.ByName("id"))
 	if err != nil || id < 1 {
-		app.serverError(w, r, fmt.Errorf("invalid update id: %s", params.ByName("id")))
+		app.badRequestResponse(w, r)
 		return
 	}
 	update, err := app.models.Update.GetByID(id)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			app.notFoundResponse(w, r)
+			return
+		}
 		app.serverError(w, r, err)
 		return
 	}
@@ -146,7 +150,7 @@ func (app *application) updateUpdatePost(w http.ResponseWriter, r *http.Request)
 	params := httprouter.ParamsFromContext(r.Context())
 	id, err := strconv.Atoi(params.ByName("id"))
 	if err != nil || id < 1 {
-		app.serverError(w, r, fmt.Errorf("invalid update id: %s", params.ByName("id")))
+		app.badRequestResponse(w, r)
 		return
 	}
 

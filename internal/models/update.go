@@ -44,6 +44,9 @@ func (m *UpdateModel) GetByID(id int) (*Update, error) {
 	defer cancel()
 	err := m.DB.QueryRowContext(ctx, stmt, id).Scan(&update.ID, &update.UserID, &update.Title, &update.Body, &update.Created, &update.LastUpdated, &update.Version)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNoRecord
+		}
 		return nil, err
 	}
 	return update, nil
@@ -60,6 +63,9 @@ ORDER BY %s %s, id ASC`, filters.sortColumn(), filters.sortDirection())
 	defer cancel()
 	rows, err := m.DB.QueryContext(ctx, stmt, title)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNoRecord
+		}
 		return nil, err
 	}
 	defer rows.Close()
@@ -102,5 +108,11 @@ func (m *UpdateModel) Delete(id int) error {
 	defer cancel()
 
 	_, err := m.DB.ExecContext(ctx, stmt, id)
-	return err
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrNoRecord
+		}
+		return err
+	}
+	return nil
 }

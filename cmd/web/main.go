@@ -1,12 +1,16 @@
 package main
 
 import (
+	"Jahresarbeitwebsite/internal/cdn"
 	"Jahresarbeitwebsite/internal/models"
 	"context"
 	"database/sql"
 	"flag"
+	"fmt"
 	"html/template"
 	"log/slog"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"time"
 
@@ -14,6 +18,8 @@ import (
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-playground/form/v4"
 	_ "github.com/lib/pq"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
 type config struct {
@@ -24,6 +30,14 @@ type config struct {
 		maxOpenConns int
 		maxIdleConns int
 		maxIdleTime  time.Duration
+	}
+
+	cdn struct {
+		endpoint  string
+		accessKey string
+		secretKey string
+		bucket    string
+		secure    bool
 	}
 
 	limiter struct {
@@ -39,7 +53,9 @@ type application struct {
 	templateCache  map[string]*template.Template
 	formDecoder    *form.Decoder
 	models         models.Models
+	cdn            *cdn.CDN
 	sessionManager *scs.SessionManager
+	reverseProxy   *httputil.ReverseProxy
 }
 
 func main() {
@@ -55,6 +71,12 @@ func main() {
 	flag.Float64Var(&cfg.limiter.rps, "limiter-rps", 10, "requests per second limit")
 	flag.IntVar(&cfg.limiter.burst, "limiter-burst", 20, "maximum burst of requests")
 	flag.BoolVar(&cfg.limiter.enabled, "limiter-enabled", true, "enable rate limiter")
+
+	flag.StringVar(&cfg.cdn.endpoint, "cdn-endpoint", os.Getenv("SHOP_CDN_ENDPOINT"), "Minio endpoint")
+	flag.StringVar(&cfg.cdn.accessKey, "cdn-acess-key", os.Getenv("SHOP_CDN_ACCESS_KEY"), "Minio access key")
+	flag.StringVar(&cfg.cdn.secretKey, "cdn-secret-key", os.Getenv("SHOP_CDN_SECRET_KEY"), "Minio secret key")
+	flag.StringVar(&cfg.cdn.bucket, "cdn-bucket", os.Getenv("SHOP_CDN_BUCKET"), "Minio bucket")
+	flag.BoolVar(&cfg.cdn.secure, "cdn-secure", false, "Minio secure connection")
 	flag.Parse()
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
@@ -75,6 +97,20 @@ func main() {
 	logger.Info("connection to database established")
 	defer db.Close()
 
+	cdnClient, err := OpenCDN(cfg)
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+	logger.Info("connection to CDN established")
+
+	reverseProxy, err := imageProxy(cfg)
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+	reverseProxy.ErrorLog = slog.NewLogLogger(logger.Handler(), slog.LevelError)
+
 	sessionManager := scs.New()
 	sessionManager.Store = postgresstore.New(db)
 	sessionManager.Lifetime = 12 * time.Hour
@@ -87,6 +123,8 @@ func main() {
 		formDecoder:    formDecoder,
 		models:         models.NewModels(db),
 		sessionManager: sessionManager,
+		cdn:            cdn.New(cdnClient, cfg.cdn.bucket),
+		reverseProxy:   reverseProxy,
 	}
 
 	err = app.serve()
@@ -116,4 +154,28 @@ func OpenDB(cfg config) (*sql.DB, error) {
 	}
 
 	return db, nil
+}
+
+func OpenCDN(cfg config) (*minio.Client, error) {
+	client, err := minio.New(cfg.cdn.endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(cfg.cdn.accessKey, cfg.cdn.secretKey, ""),
+		Secure: cfg.cdn.secure,
+	})
+	isOnline := client.IsOnline()
+	if !isOnline {
+		return nil, fmt.Errorf("minio is not online")
+	}
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
+}
+
+func imageProxy(cfg config) (*httputil.ReverseProxy, error) {
+	cdnURL, err := url.Parse(fmt.Sprintf("http://%s", cfg.cdn.endpoint))
+	if err != nil {
+		return nil, err
+	}
+	proxy := httputil.NewSingleHostReverseProxy(cdnURL)
+	return proxy, nil
 }
