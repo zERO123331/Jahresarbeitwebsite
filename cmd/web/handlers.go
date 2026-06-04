@@ -21,3 +21,7 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	data.Updates = latestUpdates
 	app.render(w, r, http.StatusOK, "home.gohtml", data)
 }
+
+func healthCheck(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}

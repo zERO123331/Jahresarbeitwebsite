@@ -5,6 +5,7 @@ import (
 	"Jahresarbeitwebsite/internal/models"
 	"context"
 	"database/sql"
+	"errors"
 	"flag"
 	"fmt"
 	"html/template"
@@ -17,6 +18,9 @@ import (
 	"github.com/alexedwards/scs/postgresstore"
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-playground/form/v4"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -97,6 +101,28 @@ func main() {
 	logger.Info("connection to database established")
 	defer db.Close()
 
+	migrationDriver, err := postgres.WithInstance(db, &postgres.Config{})
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+
+	migrator, err := migrate.NewWithDatabaseInstance("file://migrations", "postgres", migrationDriver)
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+	err = migrator.Up()
+	if err != nil && err != migrate.ErrNoChange {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+	if errors.Is(err, migrate.ErrNoChange) {
+		logger.Info("no migrations to apply")
+	} else {
+		logger.Info("migrations applied")
+	}
+
 	cdnClient, err := OpenCDN(cfg)
 	if err != nil {
 		logger.Error(err.Error())
@@ -161,12 +187,12 @@ func OpenCDN(cfg config) (*minio.Client, error) {
 		Creds:  credentials.NewStaticV4(cfg.cdn.accessKey, cfg.cdn.secretKey, ""),
 		Secure: cfg.cdn.secure,
 	})
+	if err != nil {
+		return nil, err
+	}
 	isOnline := client.IsOnline()
 	if !isOnline {
 		return nil, fmt.Errorf("minio is not online")
-	}
-	if err != nil {
-		return nil, err
 	}
 	return client, nil
 }

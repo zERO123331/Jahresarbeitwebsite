@@ -7,14 +7,14 @@
             {{with .Form.Validator.FieldErrors.title}}
                 <label class="error">{{.}}</label>
             {{end}}
-            <input type="text" name="title" id="title" />
+            <input type="text" name="title" id="title" value="{{.Form.Title}}"/>
         </div>
         <div>
             <label for="description">Description</label>
             {{with .Form.Validator.FieldErrors.description}}
                 <label class="error">{{.}}</label>
             {{end}}
-            <textarea name="description" id="description" cols="90" minlength="50" maxlength="2000" ></textarea>
+            <textarea name="description" id="description" cols="90" minlength="50" maxlength="2000" >{{.Form.Description}}</textarea>
         </div>
         <div>
             <label for="image">Images</label>
@@ -28,21 +28,21 @@
             {{with .Form.Validator.FieldErrors.price}}
                 <label class="error">{{.}}</label>
             {{end}}
-            <input type="number" name="price" id="price" />
+            <input type="number" name="price" id="price" value="{{.Form.Price}}"/>
         </div>
         <div>
             <label for="quantity">Initial Quantity</label>
             {{with .Form.Validator.FieldErrors.quantity}}
                 <label class="error">{{.}}</label>
             {{end}}
-            <input type="number" name="quantity" id="quantity"/>
+            <input type="number" name="quantity" id="quantity" value="{{.Form.Quantity}}"/>
         </div>
         <div>
             <label for="categories">Categories</label>
             {{with .Form.Validator.FieldErrors.categories}}
                 <label class="error">{{.}}</label>
             {{end}}
-            <input type="text" name="categories" id="categories"/>
+            <input type="text" name="categories" id="categories" value="{{.Form.Categories}}"/>
         </div>
 
         <button type="submit">Create</button>

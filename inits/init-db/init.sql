@@ -1,0 +1,4 @@
+CREATE USER shop WITH PASSWORD 'pa55word';
+CREATE DATABASE shopdb;
+ALTER DATABASE shopdb OWNER TO shop;
+\c shopdb

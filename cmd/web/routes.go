@@ -47,6 +47,8 @@ func (app *application) routes() http.Handler {
 		http.NotFound(w, r)
 	})
 
+	router.HandlerFunc(http.MethodGet, "/healthcheck", healthCheck)
+
 	standard := alice.New(app.recoverPanic, app.rateLimit, app.logRequest, commonHeaders, app.sessionManager.LoadAndSave)
 
 	return standard.Then(router)
