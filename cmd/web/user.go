@@ -79,7 +79,7 @@ func (app *application) userCreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = app.models.Permissions.AddForUser(id, permissions.UpdatesRead, permissions.ShopRead, permissions.ShopWrite)
+	err = app.models.Permissions.AddForUser(id, permissions.UpdatesRead, permissions.ShopRead, permissions.ShopWrite, permissions.UpdatesWrite)
 	if err != nil {
 		app.serverError(w, r, err)
 		return

@@ -149,7 +149,7 @@ func (app *application) shopEntryCreatePost(w http.ResponseWriter, r *http.Reque
 
 	for _, fileHeader := range fileHeaders {
 		form.CheckFieldErrors(fileHeader.Size <= 1024*1024*10, "images", "Each image must be smaller than 10MB.")
-		form.CheckFieldErrors(fileHeader.Size >= 512*1024, "images", "Each image must be larger than 1MB.")
+		form.CheckFieldErrors(fileHeader.Size >= 128*1024, "images", "Each image must be larger than 128KiB.")
 		contentType := fileHeader.Header.Get("Content-Type")
 		form.CheckFieldErrors(cdn.IsAllowedContentType(contentType), "images", "Only JPEG, GIF, WebP and PNG images are allowed.")
 	}
@@ -164,7 +164,7 @@ func (app *application) shopEntryCreatePost(w http.ResponseWriter, r *http.Reque
 		app.serverError(w, r, err)
 		err = app.deleteImages(r, imageURLs)
 		if err != nil {
-			panic(err)
+			panic(fmt.Errorf("failed to delete uploaded images: %w", err))
 		}
 		return
 	}
@@ -174,10 +174,18 @@ func (app *application) shopEntryCreatePost(w http.ResponseWriter, r *http.Reque
 		app.serverError(w, r, err)
 		err = app.deleteImages(r, imageURLs)
 		if err != nil {
-			panic(err)
+			panic(fmt.Errorf("failed to delete uploaded images: %w", err))
 		}
 		return
 	}
 
 	http.Redirect(w, r, "/shop/view/"+strconv.Itoa(entryID), http.StatusSeeOther)
+}
+
+func (app *application) shopEntryDelete(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func (app *application) shopEntryDeletePost(w http.ResponseWriter, r *http.Request) {
+
 }

@@ -81,6 +81,7 @@ func main() {
 	flag.StringVar(&cfg.cdn.secretKey, "cdn-secret-key", os.Getenv("SHOP_CDN_SECRET_KEY"), "Minio secret key")
 	flag.StringVar(&cfg.cdn.bucket, "cdn-bucket", os.Getenv("SHOP_CDN_BUCKET"), "Minio bucket")
 	flag.BoolVar(&cfg.cdn.secure, "cdn-secure", false, "Minio secure connection")
+
 	flag.Parse()
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
@@ -153,6 +154,11 @@ func main() {
 		reverseProxy:   reverseProxy,
 	}
 
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+
 	err = app.serve()
 	if err != nil {
 		logger.Error(err.Error())
@@ -190,9 +196,20 @@ func OpenCDN(cfg config) (*minio.Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	_, err = client.HealthCheck(3 * time.Second)
+	if err != nil {
+		return nil, err
+	}
 	isOnline := client.IsOnline()
 	if !isOnline {
 		return nil, fmt.Errorf("minio is not online")
+	}
+	buckets, err := client.ListBuckets(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	for _, bucket := range buckets {
+		fmt.Println(bucket.Name)
 	}
 	return client, nil
 }

@@ -17,12 +17,27 @@ services:
     volumes:
       - ./inits/init-db:/docker-entrypoint-initdb.d
       - ShopDBVolume:/var/lib/postgresql
+  PGadmin:
+    image: dpage/pgadmin4
+    networks:
+      - backend
+      - default
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "admin@admin.com"
+      PGADMIN_DEFAULT_PASSWORD: "admin"
+    depends_on:
+      ShopDB:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    volumes:
+     - pgadmin_data:/var/lib/pgadmin
   ShopImageDB:
     image: quay.io/minio/minio:latest
     command: server /mnt/data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: rootuser
+      MINIO_ROOT_PASSWORD: rootpassword123
     networks:
       - backend
     ports:
@@ -37,6 +52,21 @@ services:
     volumes:
       - ShopImageDBVolumeData:/mnt/data
       - ShopImageDBVolumeCerts:/etc/minio/certs
+  ShopImageDBBootstrap:
+    image: quay.io/minio/mc:latest
+    networks:
+      - backend
+    depends_on:
+      ShopImageDB:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+        /usr/bin/mc alias set localminio http://ShopImageDB:9000/ rootuser rootpassword123;
+        /usr/bin/mc mb --ignore-existing localminio/images;
+        /usr/bin/mc anonymous set download localminio/images;
+        /usr/bin/mc admin accesskey create localminio/ --access-key accesskey123 --secret-key secretkey123;
+        exit 0;
+      "
 
 
   web:
@@ -64,10 +94,11 @@ services:
         condition: service_healthy
     environment:
       SHOP_DB_DSN: "postgresql://shop:pa55word@ShopDB:5432/shopdb?sslmode=disable"
-      SHOP_CDN_ENDPOINT: "localhost:9000"
-      SHOP_CDN_ACCESS_KEY: "minioadmin"
-      SHOP_CDN_SECRET_KEY: "minioadmin"
+      SHOP_CDN_ENDPOINT: "ShopImageDB:9000"
+      SHOP_CDN_ACCESS_KEY: "accesskey123"
+      SHOP_CDN_SECRET_KEY: "secretkey123"
       SHOP_CDN_BUCKET: "images"
+
 networks:
   backend:
     driver: bridge
@@ -76,4 +107,5 @@ volumes:
   ShopDBVolume:
   ShopImageDBVolumeData:
   ShopImageDBVolumeCerts:
+  pgadmin_data:
 

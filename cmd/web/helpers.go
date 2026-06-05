@@ -155,16 +155,21 @@ func (app *application) uploadImages(r *http.Request, fileHeaders []*multipart.F
 		if err != nil {
 			return imageURLS, err
 		}
-		defer file.Close()
 
 		contentType := fileHeader.Header.Get("Content-Type")
 		extension := filepath.Ext(fileHeader.Filename)
 		objectKey := fmt.Sprintf("shop/%d/%s%s", userID, uuid.NewString(), extension)
+
 		imageURL, err := app.cdn.Upload(r.Context(), file, fileHeader.Size, objectKey, contentType)
 		if err != nil {
+			_ = file.Close()
 			return imageURLS, err
 		}
 		imageURLS = append(imageURLS, imageURL)
+		err = file.Close()
+		if err != nil {
+			return imageURLS, err
+		}
 	}
 	return imageURLS, nil
 }

@@ -6,7 +6,17 @@
     --border-color: #333;
     --border-color-hover: #444;
     --text-color: white;
-}
+        --color-primary: hsl(221, 50%, 90%);
+        --color-secondary: hsl(221, 50%, 10%);
+        --color-tertiary: hsl(281, 80%, 20%);
+        --color-accent: hsl(161, 80%, 20%);
+    }
+    .dark {
+        --color-primary: hsl(221, 50%, 10%);
+        --color-secondary: hsl(221, 50%, 90%);
+        --color-tertiary: hsl(281, 80%, 80%);
+        --color-accent: hsl(161, 80%, 80%);
+    }
 body {
     background: var(--background-color);
     color: var(--text-color);

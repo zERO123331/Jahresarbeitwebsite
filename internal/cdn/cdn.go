@@ -69,7 +69,7 @@ func (c *CDN) Upload(ctx context.Context, file io.Reader, size int64, objectKey,
 		return "", err
 	}
 
-	return fmt.Sprintf("/%s", objectKey), nil
+	return fmt.Sprintf("/%s/%s", c.bucket, objectKey), nil
 }
 
 func (c *CDN) Delete(ctx context.Context, objectKey string) error {
