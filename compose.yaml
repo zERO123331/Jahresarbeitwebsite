@@ -92,6 +92,8 @@ services:
         restart: true
       ShopImageDB:
         condition: service_healthy
+      ShopImageDBBootstrap:
+        condition: service_completed_successfully
     environment:
       SHOP_DB_DSN: "postgresql://shop:pa55word@ShopDB:5432/shopdb?sslmode=disable"
       SHOP_CDN_ENDPOINT: "ShopImageDB:9000"
