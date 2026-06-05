@@ -17,21 +17,7 @@ services:
     volumes:
       - ./inits/init-db:/docker-entrypoint-initdb.d
       - ShopDBVolume:/var/lib/postgresql
-  PGadmin:
-    image: dpage/pgadmin4
-    networks:
-      - backend
-      - default
-    environment:
-      PGADMIN_DEFAULT_EMAIL: "admin@admin.com"
-      PGADMIN_DEFAULT_PASSWORD: "admin"
-    depends_on:
-      ShopDB:
-        condition: service_healthy
-    ports:
-      - "8080:80"
-    volumes:
-     - pgadmin_data:/var/lib/pgadmin
+
   ShopImageDB:
     image: quay.io/minio/minio:latest
     command: server /mnt/data --console-address ":9001"
@@ -109,5 +95,4 @@ volumes:
   ShopDBVolume:
   ShopImageDBVolumeData:
   ShopImageDBVolumeCerts:
-  pgadmin_data:
 
