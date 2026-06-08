@@ -204,13 +204,11 @@ func OpenCDN(cfg config) (*minio.Client, error) {
 	if !isOnline {
 		return nil, fmt.Errorf("minio is not online")
 	}
-	buckets, err := client.ListBuckets(context.Background())
+	_, err = client.ListBuckets(context.Background())
 	if err != nil {
 		return nil, err
 	}
-	for _, bucket := range buckets {
-		fmt.Println(bucket.Name)
-	}
+
 	return client, nil
 }
 

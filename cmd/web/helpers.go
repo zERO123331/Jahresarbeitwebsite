@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"image"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -128,24 +127,6 @@ func (app *application) decodePostForm(r *http.Request, dst any) error {
 	}
 
 	return nil
-}
-
-func (app *application) getFormImage(r *http.Request) (image.Image, error) {
-	err := r.ParseMultipartForm(1024 * 1024)
-	if err != nil {
-		return nil, err
-	}
-	file, _, err := r.FormFile("image")
-
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
-	img, _, err := image.Decode(file)
-	if err != nil {
-		return nil, err
-	}
-	return img, nil
 }
 
 func (app *application) uploadImages(r *http.Request, fileHeaders []*multipart.FileHeader, userID int) ([]string, error) {

@@ -78,6 +78,7 @@ services:
         restart: true
       ShopImageDB:
         condition: service_healthy
+        restart: true
       ShopImageDBBootstrap:
         condition: service_completed_successfully
     environment:
